@@ -1,0 +1,9 @@
+import { UserInputDto } from '../../../modules/user-accounts/dto/user/user-input.dto';
+
+export const createFakeUser = (uniqueSymbol: string = 'x'): UserInputDto => {
+  return {
+    name: `fakeLogin${uniqueSymbol}`,
+    email: `fakeemail${uniqueSymbol}@gmail.com`,
+    password: 'qwerty123',
+  };
+};

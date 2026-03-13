@@ -1,0 +1,4 @@
+- [ ] Update @AGENTS.md:
+  - Scan `src/modules` to find all Mappers and Repositories.
+  - Add their naming conventions to the "Naming Conventions" section.
+  - Note that mappers are located in `application/mapers` and repositories in `infrastructure`.
