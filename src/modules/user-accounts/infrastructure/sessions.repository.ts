@@ -1,8 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DomainException } from '../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../core/exceptions/domain-exception-codes';
-import { MoreThan, Not, Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
 import { InjectModel } from '@nestjs/mongoose';
 import {
   Session,
@@ -37,76 +35,44 @@ export class SessionsRepository {
     return null; // session;
   }
 
-  // async findByDeviceIdOrNotFoundFail(deviceId: string): Promise<Session> {
-  //   const session = await this.sessionRepo.findOne({
-  //     where: { deviceId },
-  //   });
+  async findByDeviceId(deviceId: string): Promise<SessionDocument | null> {
+    return this.SessionModel.findOne({ deviceId });
+  }
 
-  //   if (!session) {
-  //     throw new DomainException({
-  //       code: DomainExceptionCode.NotFound,
-  //       message: 'Session not found',
-  //     });
-  //   }
+  async updateExpAndIatTimesOrNotFoundFail(
+    deviceId: string,
+    expDate: Date,
+    iatDate: Date,
+  ): Promise<void> {
+    const result = await this.SessionModel.updateOne(
+      { deviceId },
+      {
+        $set: {
+          expiresAt: expDate,
+          lastActiveDate: iatDate,
+        },
+      },
+    );
 
-  //   return session;
-  // }
+    if (result.matchedCount === 0) {
+      throw new DomainException({
+        code: DomainExceptionCode.NotFound,
+        message: 'Session not found',
+      });
+    }
+  }
 
-  // async updateExpAndIatTimesOrNotFoundFail(
-  //   deviceId: string,
-  //   expDate: Date,
-  //   iatDate: Date,
-  // ): Promise<void> {
-  //   const result = await this.sessionRepo.update(
-  //     { deviceId },
-  //     {
-  //       expiresAt: expDate,
-  //       lastActiveDate: iatDate,
-  //     },
-  //   );
+  async revokingSessionByDeviceIdOrNotFoundFail(deviceId: string): Promise<void> {
+    const result = await this.SessionModel.updateOne(
+      { deviceId },
+      { $set: { isRevoked: true } },
+    );
 
-  //   if (result.affected === 0) {
-  //     throw new NotFoundException('Session not found');
-  //   }
-  // }
-
-  // async revokingSessionByDeviceIdOrNotFoundFail(
-  //   deviceId: string,
-  // ): Promise<void> {
-  //   const result = await this.sessionRepo.update(
-  //     { deviceId },
-  //     { isRevoked: true },
-  //   );
-
-  //   if (result.affected === 0) {
-  //     throw new NotFoundException('Session not found');
-  //   }
-  // }
-
-  // async deleteManyExceptCurrent(
-  //   userId: number,
-  //   deviceId: string,
-  // ): Promise<void> {
-  //   await this.sessionRepo.update(
-  //     {
-  //       userId,
-  //       deviceId: Not(deviceId),
-  //       isRevoked: false,
-  //       expiresAt: MoreThan(new Date()),
-  //     },
-  //     {
-  //       isRevoked: true,
-  //     },
-  //   );
-  // }
-
-  // async deleteByDeviceIdAndUserId(
-  //   userId: number,
-  //   deviceId: string,
-  // ): Promise<void> {
-  //   await this.sessionRepo.update(
-  //     { userId, deviceId, isRevoked: false },
-  //     { isRevoked: true },
-  //   );
-  // }
+    if (result.matchedCount === 0) {
+      throw new DomainException({
+        code: DomainExceptionCode.NotFound,
+        message: 'Session not found',
+      });
+    }
+  }
 }

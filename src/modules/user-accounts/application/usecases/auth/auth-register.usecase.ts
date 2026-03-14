@@ -1,4 +1,4 @@
-import { CommandBus, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+﻿import { CommandBus, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CreateUserCommand } from '../users/create-user.usecase';
 import { v4 as uuidv4 } from 'uuid';
 import { addDays } from 'date-fns';
@@ -27,7 +27,7 @@ export class AuthRegisterUseCase
       new CreateUserCommand({ name, password, email }),
     );
 
-    // этот код дублируется в повт отправке письма и его лучше вынести в сервис?
+    // Этот код дублируется в повторной отправке письма и его лучше вынести в сервис?
     const confirmCode = uuidv4() as string;
     const expirationDate = addDays(new Date(), 2); // to env
 
@@ -42,3 +42,4 @@ export class AuthRegisterUseCase
       .catch(console.error);
   }
 }
+

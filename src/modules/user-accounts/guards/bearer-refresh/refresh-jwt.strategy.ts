@@ -26,19 +26,19 @@ export class RefreshJwtStrategy extends PassportStrategy(
   }
 
   async validate(payload: JwtRefreshPayload): Promise<DeviceContextDto> {
-    // const session = await this.sessionsRepository.findByDeviceIdOrNotFoundFail(
-    //   payload.deviceId,
-    // );
+    const session = await this.sessionsRepository.findByDeviceId(
+      payload.deviceId,
+    );
 
-    // if (!session || session.isRevoked || session.expiresAt < new Date()) {
-    //   throw new UnauthorizedException('Refresh token is invalid or expired');
-    // }
+    if (!session || session.isRevoked || session.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token is invalid or expired');
+    }
 
-    // const iatDate = new Date(payload.iat * 1000);
+    const iatDate = new Date(payload.iat * 1000);
 
-    // if (iatDate.getTime() !== session.lastActiveDate.getTime()) {
-    //   throw new UnauthorizedException('Refresh token is outdated');
-    // }
+    if (iatDate.getTime() !== session.lastActiveDate.getTime()) {
+      throw new UnauthorizedException('Refresh token is outdated');
+    }
 
     return payload;
   }

@@ -7,36 +7,36 @@ export class AuthEmailConfirmationCommand {
   constructor(public body: { code: string }) {}
 }
 
-// @CommandHandler(AuthEmailConfirmationCommand)
-// export class AuthEmailConfirmationUseCase
-//   implements ICommandHandler<AuthEmailConfirmationCommand>
-// {
-//   constructor(private readonly usersRepository: UsersRepository) {}
+@CommandHandler(AuthEmailConfirmationCommand)
+export class AuthEmailConfirmationUseCase
+  implements ICommandHandler<AuthEmailConfirmationCommand>
+{
+  constructor(private readonly usersRepository: UsersRepository) {}
 
-//   async execute({ body }: AuthEmailConfirmationCommand): Promise<void> {
-//     try {
-//       const user =
-//         await this.usersRepository.getUserAndEmailConfirmationDataByCodeOrNotFounFail(
-//           body.code,
-//         );
+  async execute({ body }: AuthEmailConfirmationCommand): Promise<void> {
+    try {
+      const user =
+        await this.usersRepository.findByEmailConfirmationCodeOrNotFoundFail(
+          body.code,
+        );
 
-//       if (!user.emailConfirmation.isConfirmed) {
-//         user.setEmailIsConfirmed();
+      if (!user.emailConfirmation.isConfirmed) {
+        user.setEmailIsConfirmed();
 
-//         await this.usersRepository.save(user);
-//       }
-//     } catch (er) {
-//       throw new DomainException({
-//         code: DomainExceptionCode.BadRequest,
-//         message: 'Something wrong with code',
-//         extensions: [
-//           {
-//             field: 'code',
-//             message:
-//               'The confirmation code is incorrect, expired or already been applied',
-//           },
-//         ],
-//       });
-//     }
-//   }
-// }
+        await this.usersRepository.save(user);
+      }
+    } catch (er) {
+      throw new DomainException({
+        code: DomainExceptionCode.BadRequest,
+        message: 'Something wrong with code',
+        extensions: [
+          {
+            field: 'code',
+            message:
+              'The confirmation code is incorrect, expired or already been applied',
+          },
+        ],
+      });
+    }
+  }
+}

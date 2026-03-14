@@ -23,18 +23,20 @@ import { SessionsRepository } from './infrastructure/sessions.repository';
 // import { SessionsQueryRepository } from './infrastructure/query/sessions-query.repository';
 import { CreateTokensPairUseCase } from './application/usecases/auth/create-tokens-pair.usecase';
 import { CreateSessionUseCase } from './application/usecases/sessions/create-session.usecase';
-// import { RevokingSessionUseCase } from './application/usecases/sessions/revoking-session.usecase';
+import { RevokingSessionUseCase } from './application/usecases/sessions/revoking-session.usecase';
 // import { TerminateAllExcludeCurrentSessionUseCase } from './application/usecases/sessions/terminate-all-exclude-current-session.usecase';
 // import { GetAllSessionsHandler } from './application/usecases/sessions/get-all-sessions.query-handler';
 // import { TerminateByIdUseCase } from './application/usecases/sessions/terminate-by-id-session.usecase';
-// import { UpdateSessionUseCase } from './application/usecases/sessions/update-session.usecase';
+import { UpdateSessionUseCase } from './application/usecases/sessions/update-session.usecase';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { CreateUserUseCase } from './application/usecases/users/create-user.usecase';
 // import { DeleteUserUseCase } from './application/usecases/users/delete-user.usecase';
-// import { AuthEmailConfirmationUseCase } from './application/usecases/auth/auth-email-confirmation.usecase';
-// import { AuthEmailResendConfirmationUseCase } from './application/usecases/auth/auth-email-resend-confirmation.usecase';
+import { AuthEmailConfirmationUseCase } from './application/usecases/auth/auth-email-confirmation.usecase';
+import { AuthEmailResendConfirmationUseCase } from './application/usecases/auth/auth-email-resend-confirmation.usecase';
 import { AuthRegisterUseCase } from './application/usecases/auth/auth-register.usecase';
+import { AuthSendRecoveryPasswordCodeUseCase } from './application/usecases/auth/auth-send-recovery-password-code.usecase';
+import { AuthNewPasswordApplyingUseCase } from './application/usecases/auth/auth-new-password-applying.usecase';
 // import { GetMeHandler } from './application/usecases/auth/get-me.query-handler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User, UserSchema } from './domain/user/user.entity';
@@ -48,16 +50,18 @@ import { Session, SessionSchema } from './domain/session/session.entity';
 export const CommandHandlers = [
   CreateTokensPairUseCase,
   CreateSessionUseCase,
-  // UpdateSessionUseCase,
-  // RevokingSessionUseCase,
+  UpdateSessionUseCase,
+  RevokingSessionUseCase,
   // TerminateByIdUseCase,
   // TerminateAllExcludeCurrentSessionUseCase,
   //
   CreateUserUseCase,
   // DeleteUserUseCase,
 
-  // AuthEmailConfirmationUseCase,
-  // AuthEmailResendConfirmationUseCase,
+  AuthEmailConfirmationUseCase,
+  AuthEmailResendConfirmationUseCase,
+  AuthSendRecoveryPasswordCodeUseCase,
+  AuthNewPasswordApplyingUseCase,
   AuthRegisterUseCase,
 ];
 
@@ -107,8 +111,8 @@ export const QueryHandlers = [
     ...CommandHandlers,
     ...QueryHandlers,
     //
-    //РїСЂРёРјРµСЂ РёРЅСЃС‚Р°РЅС†РёСЂРѕРІР°РЅРёСЏ С‡РµСЂРµР· С‚РѕРєРµРЅ
-    //РµСЃР»Рё РЅР°РґРѕ РІРЅРµРґСЂРёС‚СЊ РЅРµСЃРєРѕР»СЊРєРѕ СЂР°Р· РѕРґРёРЅ Рё С‚РѕС‚ Р¶Рµ РєР»Р°СЃСЃ
+    // Пример инстанцирования через токен.
+    // Если надо внедрить несколько раз один и тот же класс.
     {
       provide: ACCESS_TOKEN_STRATEGY_INJECT_TOKEN,
       useFactory: (coreConfig: CoreConfig): JwtService => {

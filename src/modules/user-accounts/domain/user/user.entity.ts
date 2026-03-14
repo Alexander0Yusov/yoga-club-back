@@ -1,4 +1,4 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+﻿import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Model } from 'mongoose';
 import {
   CreateUserDomainDto,
@@ -108,11 +108,12 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-//регистрирует методы сущности в схеме
+// Регистрирует методы сущности в схеме.
 UserSchema.loadClass(User);
 
-//Типизация документа
+// Типизация документа.
 export type UserDocument = HydratedDocument<User>;
 
-//Типизация модели + статические методы
+// Типизация модели + статические методы.
 export type UserModelType = Model<UserDocument> & typeof User;
+

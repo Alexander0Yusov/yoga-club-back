@@ -9,30 +9,29 @@ export class AuthSendRecoveryPasswordCodeCommand {
   constructor(public dto: UpdateUserDto) {}
 }
 
-// @CommandHandler(AuthSendRecoveryPasswordCodeCommand)
-// export class AuthSendRecoveryPasswordCodeUseCase
-//   implements ICommandHandler<AuthSendRecoveryPasswordCodeCommand>
-// {
-//   constructor(
-//     private readonly emailService: EmailService,
-//     private readonly usersRepository: UsersRepository,
-//   ) {}
+@CommandHandler(AuthSendRecoveryPasswordCodeCommand)
+export class AuthSendRecoveryPasswordCodeUseCase
+  implements ICommandHandler<AuthSendRecoveryPasswordCodeCommand>
+{
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly usersRepository: UsersRepository,
+  ) {}
 
-//   async execute({
-//     dto: { email },
-//   }: AuthSendRecoveryPasswordCodeCommand): Promise<void> {
-//     const user =
-//       await this.usersRepository.findByLoginOrEmailOrNotFoundFail(email);
+  async execute({
+    dto: { email },
+  }: AuthSendRecoveryPasswordCodeCommand): Promise<void> {
+    const user = await this.usersRepository.findByEmailOrNotFoundFail(email);
 
-//     const confirmCode = uuidv4() as string;
-//     const expirationDate = addDays(new Date(), 2); // to env
+    const confirmCode = uuidv4() as string;
+    const expirationDate = addDays(new Date(), 2); // to env
 
-//     user.setPasswordConfirmationCode(confirmCode, expirationDate);
+    user.setPasswordConfirmationCode(confirmCode, expirationDate);
 
-//     await this.usersRepository.save(user);
+    await this.usersRepository.save(user);
 
-//     await this.emailService
-//       .sendRecoveryEmail(email, confirmCode)
-//       .catch(console.error);
-//   }
-// }
+    await this.emailService
+      .sendRecoveryEmail(email, confirmCode)
+      .catch(console.error);
+  }
+}

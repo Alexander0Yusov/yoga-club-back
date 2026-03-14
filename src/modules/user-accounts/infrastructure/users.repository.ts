@@ -1,6 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { IsNull, MoreThan, Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Injectable } from '@nestjs/common';
 
 import {
   User,
@@ -66,6 +64,44 @@ export class UsersRepository {
     const user = await this.UserModel.findOne({ email });
 
     return user ?? null;
+  }
+
+  async findByEmailConfirmationCodeOrNotFoundFail(
+    code: string,
+  ): Promise<UserDocument> {
+    const user = await this.UserModel.findOne({
+      'emailConfirmation.confirmationCode': code,
+      'emailConfirmation.isConfirmed': false,
+      'emailConfirmation.expirationDate': { $gt: new Date() },
+    });
+
+    if (!user) {
+      throw new DomainException({
+        code: DomainExceptionCode.NotFound,
+        message: 'Confirmation code not found',
+      });
+    }
+
+    return user;
+  }
+
+  async findByPasswordRecoveryCodeOrNotFoundFail(
+    code: string,
+  ): Promise<UserDocument> {
+    const user = await this.UserModel.findOne({
+      'passwordRecovery.confirmationCode': code,
+      'passwordRecovery.isConfirmed': false,
+      'passwordRecovery.expirationDate': { $gt: new Date() },
+    });
+
+    if (!user) {
+      throw new DomainException({
+        code: DomainExceptionCode.NotFound,
+        message: 'Recovery code not found',
+      });
+    }
+
+    return user;
   }
 
   // async getUserAndEmailConfirmationDataByCodeOrNotFounFail(
