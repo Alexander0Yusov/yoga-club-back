@@ -12,6 +12,7 @@ import {
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiCookieAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -83,15 +84,24 @@ export class AuthController {
     await this.commandBus.execute(new AuthRegisterCommand(body));
   }
 
-  // +
   @Post('login')
   @Throttle({ default: {} })
   @HttpCode(HttpStatus.OK)
   @UseGuards(LocalAuthGuard)
   @ApiOperation({ summary: 'Login and receive access token' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', example: 'user@mail.com' },
+        password: { type: 'string', example: 'qwerty' },
+      },
+      required: ['email', 'password'],
+    },
+  })
   @ApiResponse({
     status: 200,
-    description: 'Authenticated',
+    description: 'Authenticated (refresh token is set as httpOnly cookie)',
     schema: {
       type: 'object',
       properties: {
@@ -117,7 +127,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<{ accessToken: string }> {
-    const ip = req.ip as string; // || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ip = req.ip as string;
 
     const deviceName = req.get('user-agent') || 'Unknown device';
 
@@ -131,7 +141,7 @@ export class AuthController {
 
     response.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: true, // true РІ РїСЂРѕРґРµ, false РІ dev РїСЂРё http (+/-)
+      secure: true, // true in prod, false in dev for http
     });
 
     return { accessToken };
@@ -140,11 +150,11 @@ export class AuthController {
   @Post('refresh-token')
   @UseGuards(RefreshJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
+  @ApiCookieAuth('refreshToken')
   @ApiOperation({ summary: 'Refresh access and refresh tokens' })
   @ApiResponse({
     status: 200,
-    description: 'Token pair refreshed',
+    description: 'Token pair refreshed (new refresh token is set as cookie)',
     schema: {
       type: 'object',
       properties: {
@@ -180,7 +190,7 @@ export class AuthController {
 
     response.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: true, // true РІ РїСЂРѕРґРµ, false РІ dev РїСЂРё http (+/-)
+      secure: true, // true in prod, false in dev for http
     });
 
     return { accessToken };
@@ -189,7 +199,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(RefreshJwtAuthGuard)
-  @ApiBearerAuth()
+  @ApiCookieAuth('refreshToken')
   @ApiOperation({ summary: 'Logout current session' })
   @ApiResponse({ status: 204, description: 'Logged out' })
   @ApiResponse({
@@ -207,7 +217,6 @@ export class AuthController {
     );
   }
 
-  // +
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -254,6 +263,15 @@ export class AuthController {
       },
     },
   })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: { message: { type: 'string', example: 'User not found' } },
+      example: { message: 'User not found' },
+    },
+  })
   async passwordRecovery(@Body() body: UpdateUserDto) {
     await this.commandBus.execute(
       new AuthSendRecoveryPasswordCodeCommand(body),
@@ -278,13 +296,15 @@ export class AuthController {
             type: 'object',
             properties: {
               message: { type: 'string', example: 'Validation error' },
-              field: { type: 'string', example: 'email' },
+              field: { type: 'string', example: 'recoveryCode' },
             },
           },
         },
       },
       example: {
-        errorsMessages: [{ message: 'Validation error', field: 'email' }],
+        errorsMessages: [
+          { message: 'Validation error', field: 'recoveryCode' },
+        ],
       },
     },
   })
@@ -337,7 +357,7 @@ export class AuthController {
   @ApiResponse({ status: 204, description: 'Confirmation email resent' })
   @ApiResponse({
     status: 400,
-    description: 'Validation error',
+    description: 'Validation error or email already confirmed',
     schema: {
       type: 'object',
       properties: {
@@ -359,6 +379,6 @@ export class AuthController {
   })
   async registrationEmailResending(@Body() body: UpdateUserDto) {
     await this.commandBus.execute(new AuthEmailResendConfirmationCommand(body));
-    //РїРѕСѓР±РёСЂР°С‚СЊ СѓСЃС‚Р°СЂРµРІС€РёРµ СЃРµСЂРІРёСЃС‹ РІРµР·РґРµ !!
+    // Почистить устаревшие сервисы везде.
   }
 }
