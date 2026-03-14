@@ -56,7 +56,19 @@ export class AuthController {
   @Throttle({ default: {} })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Register new user' })
-  @ApiBody({ type: UserInputDto })
+  @ApiBody({
+    type: UserInputDto,
+    examples: {
+      default: {
+        summary: 'Default',
+        value: {
+          name: 'john_doe',
+          email: 'user@mail.com',
+          password: 'qwerty',
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 204, description: 'Registration accepted' })
   @ApiResponse({
     status: 400,
@@ -239,7 +251,15 @@ export class AuthController {
   @Throttle({ default: {} })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Send password recovery email' })
-  @ApiBody({ type: UpdateUserDto })
+  @ApiBody({
+    type: UpdateUserDto,
+    examples: {
+      default: {
+        summary: 'Default',
+        value: { email: 'user@mail.com' },
+      },
+    },
+  })
   @ApiResponse({ status: 204, description: 'Recovery email requested' })
   @ApiResponse({
     status: 400,
@@ -282,7 +302,18 @@ export class AuthController {
   @Throttle({ default: {} })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Set a new password by recovery code' })
-  @ApiBody({ type: PasswordRecoveryDto })
+  @ApiBody({
+    type: PasswordRecoveryDto,
+    examples: {
+      default: {
+        summary: 'Default',
+        value: {
+          newPassword: 'new_password_123',
+          recoveryCode: 'f5b9f1b0-1c2d-4b95-9a2b-2b1c9c8f2a1b',
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 204, description: 'Password changed' })
   @ApiResponse({
     status: 400,
@@ -316,7 +347,15 @@ export class AuthController {
   @Throttle({ default: {} })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Confirm registration email' })
-  @ApiBody({ type: ConfirmationCodeDto })
+  @ApiBody({
+    type: ConfirmationCodeDto,
+    examples: {
+      default: {
+        summary: 'Default',
+        value: { code: 'f5b9f1b0-1c2d-4b95-9a2b-2b1c9c8f2a1b' },
+      },
+    },
+  })
   @ApiResponse({ status: 204, description: 'Email confirmed' })
   @ApiResponse({
     status: 400,
@@ -353,7 +392,15 @@ export class AuthController {
   @Throttle({ default: {} })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Resend registration confirmation email' })
-  @ApiBody({ type: UpdateUserDto })
+  @ApiBody({
+    type: UpdateUserDto,
+    examples: {
+      default: {
+        summary: 'Default',
+        value: { email: 'user@mail.com' },
+      },
+    },
+  })
   @ApiResponse({ status: 204, description: 'Confirmation email resent' })
   @ApiResponse({
     status: 400,

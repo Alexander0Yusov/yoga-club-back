@@ -29,5 +29,56 @@ export function swaggerSetup(app: INestApplication) {
     customCssUrl: [
       'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
     ],
-  });
+    swaggerOptions: {
+      tagsSorter: (a: string, b: string) => {
+        const order = ['App', 'Auth', 'Users'];
+        const indexA = order.indexOf(a);
+        const indexB = order.indexOf(b);
+
+        if (indexA !== -1 || indexB !== -1) {
+          return (indexA === -1 ? order.length : indexA) -
+            (indexB === -1 ? order.length : indexB);
+        }
+
+        return a.localeCompare(b);
+      },
+      operationsSorter: (a: any, b: any) => {
+        const pathA = a?.get?.('path') ?? '';
+        const pathB = b?.get?.('path') ?? '';
+        const aIsRootApi = pathA === '/api';
+        const bIsRootApi = pathB === '/api';
+        const aIsApi = pathA.startsWith('/api');
+        const bIsApi = pathB.startsWith('/api');
+
+        if (aIsRootApi !== bIsRootApi) {
+          return aIsRootApi ? -1 : 1;
+        }
+
+        if (aIsApi !== bIsApi) {
+          return aIsApi ? -1 : 1;
+        }
+
+        const authOrder = [
+          '/api/auth/registration',
+          '/api/auth/login',
+          '/api/auth/refresh-token',
+          '/api/auth/logout',
+          '/api/auth/me',
+          '/api/auth/password-recovery',
+          '/api/auth/new-password',
+          '/api/auth/registration-confirmation',
+          '/api/auth/registration-email-resending',
+        ];
+        const indexA = authOrder.indexOf(pathA);
+        const indexB = authOrder.indexOf(pathB);
+
+        if (indexA !== -1 || indexB !== -1) {
+          return (indexA === -1 ? authOrder.length : indexA) -
+            (indexB === -1 ? authOrder.length : indexB);
+        }
+
+        return pathA.localeCompare(pathB);
+      },
+    },
+  } as any);
 }
