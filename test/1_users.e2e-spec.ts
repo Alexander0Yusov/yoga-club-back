@@ -4,7 +4,6 @@ import { App } from 'supertest/types';
 import mongoose from 'mongoose';
 import { UsersTestManager } from './helpers/users-test-manager';
 import { initSettings } from './helpers/init-settings';
-import { JwtService } from '@nestjs/jwt';
 import { deleteAllData } from './helpers/delete-all-data';
 import { UserInputDto } from 'src/modules/user-accounts/dto/user/user-input.dto';
 import { GLOBAL_PREFIX } from '../src/setup/global-prefix.setup';
@@ -14,10 +13,7 @@ import {
   UserViewDto,
 } from '../src/modules/user-accounts/dto/user/user-view.dto';
 import { delay } from './helpers/delay';
-import { EmailService } from '../src/modules/mailer/email.service';
 import { EmailServiceMock } from './mock/email-service.mock';
-import { ACCESS_TOKEN_STRATEGY_INJECT_TOKEN } from 'src/modules/user-accounts/constants/auth-tokens.inject-constants';
-import { CoreConfig } from 'src/core/core.config';
 
 describe('users (e2e)', () => {
   let app: INestApplication<App>;
@@ -25,22 +21,14 @@ describe('users (e2e)', () => {
   let emailServiceMock: EmailServiceMock;
 
   beforeAll(async () => {
-    const result = await initSettings((moduleBuilder) =>
-      moduleBuilder
-        .overrideProvider(ACCESS_TOKEN_STRATEGY_INJECT_TOKEN)
-        .useFactory({
-          factory: (coreConfig: CoreConfig) => {
-            return new JwtService({
-              secret: coreConfig.accessTokenSecret,
-              signOptions: { expiresIn: '2s' },
-            });
-          },
-          inject: [CoreConfig],
-        }),
-    );
+    const result = await initSettings({
+      tokenExpiresIn: { access: '2s', refresh: '10s' },
+      useEmailServiceMock: true,
+    });
 
     app = result.app;
     userTestManger = result.userTestManger;
+    emailServiceMock = result.emailServiceMock as EmailServiceMock;
 
     // этот мок вызывается в боевом коде если ему дать
     // emailServiceMock = app.get(EmailService) as EmailServiceMock;
