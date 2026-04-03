@@ -17,7 +17,7 @@ export class AuthService {
     password: string,
   ): Promise<UserContextDto | null> {
     const user = await this.usersRepository.findByEmail(email);
-    if (!user) {
+    if (!user || user.isBanned || !user.passwordHash) {
       return null;
     }
 
@@ -30,6 +30,10 @@ export class AuthService {
       return null;
     }
 
-    return { id: user.id.toString() };
+    return {
+      id: user.id.toString(),
+      lang: user.lang,
+      isLanguageManual: user.isLanguageManual,
+    };
   }
 }

@@ -24,7 +24,7 @@ export class CreateUserUseCase
   ) {}
 
   async execute({
-    dto: { name, password, email },
+    dto: { password, email },
   }: CreateUserCommand): Promise<string> {
     const existsEmail = await this.usersRepository.findByEmail(email);
 
@@ -38,7 +38,7 @@ export class CreateUserUseCase
 
     const passwordHash = await this.cryptoService.createPasswordHash(password);
 
-    const user = this.UserModel.createInstance({ name, passwordHash, email });
+    const user = this.UserModel.createLocalUser(email, passwordHash);
 
     await this.usersRepository.save(user);
 

@@ -7,8 +7,17 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { v4 as uuidv4 } from 'uuid';
 
+import { Language } from '../../../domain/user/user.entity';
+
 export class CreateTokensPairCommand {
-  constructor(public dto: { userId: string; deviceId?: string }) {}
+  constructor(
+    public dto: {
+      userId: string;
+      deviceId?: string;
+      lang: Language;
+      isLanguageManual: boolean;
+    },
+  ) {}
 }
 
 @CommandHandler(CreateTokensPairCommand)
@@ -29,11 +38,15 @@ export class CreateTokensPairUseCase
   }> {
     const accessToken = this.accessTokenContext.sign({
       id: dto.userId,
+      lang: dto.lang,
+      isLanguageManual: dto.isLanguageManual,
     });
 
     const refreshToken = this.refreshTokenContext.sign({
       id: dto.userId,
       deviceId: dto.deviceId || uuidv4().toString(),
+      lang: dto.lang,
+      isLanguageManual: dto.isLanguageManual,
     });
 
     return {

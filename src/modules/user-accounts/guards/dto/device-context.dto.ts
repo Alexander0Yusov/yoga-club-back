@@ -1,4 +1,5 @@
-import { IsString } from 'class-validator';
+import { IsBoolean, IsEnum, IsString } from 'class-validator';
+import { Language } from '../../domain/user/user.entity';
 
 export class DeviceContextDto {
   @IsString()
@@ -6,4 +7,10 @@ export class DeviceContextDto {
 
   @IsString()
   deviceId: string;
+
+  @IsEnum(Language)
+  lang: Language;
+
+  @IsBoolean()
+  isLanguageManual: boolean;
 }

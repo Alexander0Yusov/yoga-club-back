@@ -6,7 +6,7 @@ import { EmailService } from '../../../../mailer/email.service';
 import { UsersRepository } from '../../../infrastructure/users.repository';
 
 export class AuthSendRecoveryPasswordCodeCommand {
-  constructor(public dto: UpdateUserDto) {}
+  constructor(public dto: UpdateUserDto & { lang: string }) {}
 }
 
 @CommandHandler(AuthSendRecoveryPasswordCodeCommand)
@@ -19,7 +19,7 @@ export class AuthSendRecoveryPasswordCodeUseCase
   ) {}
 
   async execute({
-    dto: { email },
+    dto: { email, lang },
   }: AuthSendRecoveryPasswordCodeCommand): Promise<void> {
     const user = await this.usersRepository.findByEmailOrNotFoundFail(email);
 
@@ -31,7 +31,7 @@ export class AuthSendRecoveryPasswordCodeUseCase
     await this.usersRepository.save(user);
 
     await this.emailService
-      .sendRecoveryEmail(email, confirmCode)
+      .sendRecoveryEmail(email, confirmCode, lang)
       .catch(console.error);
   }
 }

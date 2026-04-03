@@ -4,6 +4,8 @@ import express, { Request, Response } from 'express';
 import { initAppModule } from './init-app-module';
 import { appSetup } from './setup/app.setup';
 
+import { CoreConfig } from './core/core.config';
+
 const server = express();
 let isInitialized = false;
 
@@ -15,7 +17,8 @@ export default async function handler(req: Request, res: Response) {
       new ExpressAdapter(server),
     );
 
-    appSetup(app);
+    const coreConfig = app.get<CoreConfig>(CoreConfig);
+    appSetup(app, coreConfig);
     await app.init();
     isInitialized = true;
   }

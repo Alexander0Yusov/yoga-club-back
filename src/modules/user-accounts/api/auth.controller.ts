@@ -8,6 +8,7 @@ import {
   Request as Req,
   Res,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -42,17 +43,27 @@ import { AuthEmailResendConfirmationCommand } from '../application/usecases/auth
 import { AuthSendRecoveryPasswordCodeCommand } from '../application/usecases/auth/auth-send-recovery-password-code.usecase';
 import { AuthNewPasswordApplyingCommand } from '../application/usecases/auth/auth-new-password-applying.usecase';
 import { UsersQueryRepository } from '../infrastructure/query/users-query.repository';
+import { AuthGuard } from '@nestjs/passport';
+import { OAuthLoginCommand } from '../application/usecases/auth/oauth-login.usecase';
+import { GoogleLoginDto } from '../dto/auth/google-login.dto';
+import { GoogleLoginCommand } from '../application/usecases/auth/google-login.usecase';
+import { Language } from '../domain/user/user.entity';
+import { UsersRepository } from '../infrastructure/users.repository';
+
+import { LanguageSyncInterceptor } from '../interceptors/language-sync.interceptor';
 
 @ApiTags('Auth')
 @Controller('auth')
+@UseInterceptors(LanguageSyncInterceptor)
 export class AuthController {
   constructor(
     private commandBus: CommandBus,
     private queryBus: QueryBus,
     private usersQueryRepository: UsersQueryRepository,
+    private usersRepository: UsersRepository,
   ) {}
 
-  @Post('registration')
+  @Post('register')
   @Throttle({ default: {} })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Register new user' })
@@ -92,8 +103,13 @@ export class AuthController {
       },
     },
   })
-  async registration(@Body() body: UserInputDto): Promise<void> {
-    await this.commandBus.execute(new AuthRegisterCommand(body));
+  async registration(
+    @Body() body: UserInputDto,
+    @Req() req: Request,
+  ): Promise<void> {
+    console.log(55555, body);
+    const lang = this.resolveRequestLang(req);
+    await this.commandBus.execute(new AuthRegisterCommand({ ...body, lang }));
   }
 
   @Post('login')
@@ -139,12 +155,18 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<{ accessToken: string }> {
+    console.log(66666, user);
+
     const ip = req.ip as string;
 
     const deviceName = req.get('user-agent') || 'Unknown device';
 
     const { accessToken, refreshToken } = await this.commandBus.execute(
-      new CreateTokensPairCommand({ userId: user.id }),
+      new CreateTokensPairCommand({
+        userId: user.id,
+        lang: user.lang,
+        isLanguageManual: user.isLanguageManual,
+      }),
     );
 
     await this.commandBus.execute(
@@ -159,7 +181,7 @@ export class AuthController {
     return { accessToken };
   }
 
-  @Post('refresh-token')
+  @Post('refresh')
   @UseGuards(RefreshJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiCookieAuth('refreshToken')
@@ -191,10 +213,14 @@ export class AuthController {
     @Device() deviceContext: DeviceContextDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<{ accessToken: string }> {
+    console.log(77777, 'refreshToken');
+
     const { accessToken, refreshToken } = await this.commandBus.execute(
       new CreateTokensPairCommand({
         userId: deviceContext.id,
         deviceId: deviceContext.deviceId,
+        lang: deviceContext.lang,
+        isLanguageManual: deviceContext.isLanguageManual,
       }),
     );
 
@@ -292,9 +318,10 @@ export class AuthController {
       example: { message: 'User not found' },
     },
   })
-  async passwordRecovery(@Body() body: UpdateUserDto) {
+  async passwordRecovery(@Body() body: UpdateUserDto, @Req() req: Request) {
+    const lang = this.resolveRequestLang(req);
     await this.commandBus.execute(
-      new AuthSendRecoveryPasswordCodeCommand(body),
+      new AuthSendRecoveryPasswordCodeCommand({ ...body, lang }),
     );
   }
 
@@ -385,6 +412,9 @@ export class AuthController {
     },
   })
   async registrationConfirmation(@Body() body: ConfirmationCodeDto) {
+    console.log(77777, body);
+    
+
     await this.commandBus.execute(new AuthEmailConfirmationCommand(body));
   }
 
@@ -426,6 +456,65 @@ export class AuthController {
   })
   async registrationEmailResending(@Body() body: UpdateUserDto) {
     await this.commandBus.execute(new AuthEmailResendConfirmationCommand(body));
-    // Почистить устаревшие сервисы везде.
+    // РѕРІС‚РѕСЂРЅР°СЏ РѕС‚РїСЂР°РІРєР° РїРёСЃСЊРјР° СЃ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµРј
+  }
+
+  @Post('google-login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login with Google ID Token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Authenticated (refresh token is set as httpOnly cookie)',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: { type: 'string' },
+      },
+    },
+  })
+  async googleLogin(
+    @Body() body: GoogleLoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<{ accessToken: string }> {
+    const userId = await this.commandBus.execute(new GoogleLoginCommand(body));
+
+    // For googleLogin, we need the user to get their lang/isLanguageManual.
+    const user = await this.usersRepository.findById(userId);
+    
+    const { accessToken, refreshToken } = await this.commandBus.execute(
+      new CreateTokensPairCommand({
+        userId,
+        lang: user?.lang || Language.RU,
+        isLanguageManual: user?.isLanguageManual || false,
+      }),
+    );
+
+    await this.commandBus.execute(
+      new CreateSessionCommand({
+        refreshToken,
+        ip: req.ip || '0.0.0.0',
+        deviceName: req.headers['user-agent'] || 'Unknown',
+      }),
+    );
+
+    response.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: true,
+    });
+
+    return { accessToken };
+  }
+
+  private resolveRequestLang(req: Request): string {
+    const header =
+      (req.headers['x-client-lang'] as string) ||
+      (req.headers['accept-language'] as string) ||
+      'en';
+
+    const match = header.match(/^([a-z]{2})/i);
+    const lang = match ? match[1].toLowerCase() : 'en';
+
+    return ['en', 'ru', 'uk', 'de'].includes(lang) ? lang : 'en';
   }
 }

@@ -5,7 +5,7 @@ import { DomainException } from '../../../../../core/exceptions/domain-exception
 import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
 
 export class TerminateByIdCommand {
-  constructor(public dto: DeviceContextDto) {}
+  constructor(public dto: { userId: string; deviceId: string }) {}
 }
 
 // @CommandHandler(TerminateByIdCommand)

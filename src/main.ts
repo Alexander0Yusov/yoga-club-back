@@ -14,11 +14,11 @@ async function bootstrap() {
   // создаём на основе донастроенного модуля приложение
   const app = await NestFactory.create(dynamicAppModule);
 
-  appSetup(app);
+  const coreConfig = app.get<CoreConfig>(CoreConfig);
+  appSetup(app, coreConfig);
 
   // const PORT = process.env.PORT || 5001;
 
-  const coreConfig = app.get<CoreConfig>(CoreConfig);
   const port = coreConfig.port;
 
   await app.listen(port, () => {

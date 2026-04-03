@@ -30,6 +30,11 @@ export class UsersRepository {
     return user;
   }
 
+  async findById(id: string): Promise<UserDocument | null> {
+    const user = await this.UserModel.findById(id);
+    return user ?? null;
+  }
+
   async findByIdOrNotFoundFail(id: string): Promise<UserDocument> {
     const user = await this.UserModel.findById(id);
 
@@ -59,7 +64,7 @@ export class UsersRepository {
   //   return user;
   // }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<UserDocument | null> {
     // проверить на неудаление +/- !!!
     const user = await this.UserModel.findOne({ email });
 

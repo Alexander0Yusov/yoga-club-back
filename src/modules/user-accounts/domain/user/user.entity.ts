@@ -1,89 +1,162 @@
-﻿import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Model } from 'mongoose';
-import {
-  CreateUserDomainDto,
-  UpdateUserDto,
-} from '../../dto/user/create-user-domain.dto';
-import {
-  ConfirmationData,
-  ConfirmationDataSchema,
-} from './confirmation-data.schema';
+import { BaseDomainEntity } from '../../../../core/base-domain-entity/base-domain-entity';
+import { ConfirmationData, ConfirmationDataSchema } from './confirmation-data.schema';
 import { addDays } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 
-export const loginConstraints = {
-  minLength: 3,
-  maxLength: 10,
-};
+export const loginConstraints = { minLength: 3, maxLength: 10 };
+export const passwordConstraints = { minLength: 6, maxLength: 20 };
+export const emailConstraints = { match: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ };
 
-export const passwordConstraints = {
-  minLength: 6,
-  maxLength: 20,
-};
+export enum Role {
+  USER = 'USER',
+  ADMIN = 'ADMIN',
+  SUPERADMIN = 'SUPERADMIN',
+}
 
-export const emailConstraints = {
-  match: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-};
+export enum Language {
+  UK = 'uk',
+  RU = 'ru',
+  EN = 'en',
+  DE = 'de',
+}
+
+export class LinkedIdentity {
+  @Prop({ required: true })
+  provider: string; // 'google' | 'facebook' | 'local'
+
+  @Prop()
+  providerUserId?: string;
+
+  @Prop()
+  providerEmail?: string;
+
+  @Prop()
+  providerAvatarUrl?: string;
+
+  @Prop()
+  providerName?: string;
+}
 
 @Schema({ timestamps: true })
-export class User {
-  @Prop({ type: String, required: true, unique: true, ...loginConstraints })
-  name: string;
-
-  @Prop({ type: String, required: true })
-  passwordHash: string;
-
-  @Prop({ type: String, required: true, ...emailConstraints })
+export class User extends BaseDomainEntity {
+  @Prop({ type: String, required: true, unique: true })
   email: string;
 
-  @Prop({ type: Date, nullable: true, default: null })
-  deletedAt: Date | null;
+  @Prop({ type: String, enum: Role, default: Role.USER })
+  role: Role;
 
-  createdAt: Date;
-  updatedAt: Date;
+  @Prop({ type: String, enum: Language, default: Language.RU })
+  lang: Language;
 
-  @Prop({ type: ConfirmationDataSchema })
+  @Prop({ type: Boolean, default: false })
+  isLanguageManual: boolean;
+
+  @Prop({ type: String })
+  name: string;
+
+  @Prop({ type: String })
+  imgUrl: string;
+
+  @Prop({ type: String })
+  telephone: string;
+
+  @Prop({ type: Boolean, default: false })
+  isSubscribed: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  isBanned: boolean;
+
+  @Prop({ type: ConfirmationDataSchema, default: () => ({ isConfirmed: false, confirmationCode: null, expirationDate: null }) })
   emailConfirmation: ConfirmationData;
 
-  @Prop({ type: ConfirmationDataSchema })
+  @Prop({ type: ConfirmationDataSchema, default: () => ({ isConfirmed: false, confirmationCode: null, expirationDate: null }) })
   passwordRecovery: ConfirmationData;
 
-  static createInstance(dto: CreateUserDomainDto): UserDocument {
+  // Local auth specific
+  @Prop({ type: String })
+  passwordHash?: string;
+
+  @Prop({ type: [LinkedIdentity], default: [] })
+  linkedIdentities: LinkedIdentity[];
+
+  // --- Methods ---
+
+  static createLocalUser(email: string, passwordHash: string, name?: string): UserDocument {
     const user = new this();
-
-    user.name = dto.name;
-    user.passwordHash = dto.passwordHash;
-    user.email = dto.email;
-
-    user.emailConfirmation = new ConfirmationData();
-    user.passwordRecovery = new ConfirmationData();
-
-    user.emailConfirmation.expirationDate = addDays(new Date(), 2);
-    user.emailConfirmation.confirmationCode = uuidv4();
-
+    user.email = email;
+    user.passwordHash = passwordHash;
+    user.name = name || email.split('@')[0];
+    user.role = Role.USER;
+    user.linkedIdentities = [
+      {
+        provider: 'local',
+        providerEmail: email,
+        providerName: user.name,
+      },
+    ];
     return user as UserDocument;
   }
 
-  get id(): string {
-    // @ts-ignore
-    return this._id.toString();
+  static createOAuthUser(
+    provider: string,
+    providerUserId: string,
+    email: string,
+    name?: string,
+    avatarUrl?: string,
+  ): UserDocument {
+    const user = new this();
+    user.email = email;
+    user.name = name || email.split('@')[0];
+    user.imgUrl = avatarUrl || '';
+    user.role = Role.USER;
+    user.linkedIdentities = [
+      {
+        provider,
+        providerUserId,
+        providerEmail: email,
+        providerName: name,
+        providerAvatarUrl: avatarUrl,
+      },
+    ];
+    return user as UserDocument;
   }
 
-  update(dto: UpdateUserDto) {
-    if (dto.email !== this.email) {
-      this.emailConfirmation.isConfirmed = false;
-      this.email = dto.email;
+  linkOAuthProvider(
+    provider: string,
+    providerUserId: string,
+    providerEmail: string,
+    providerName?: string,
+    providerAvatarUrl?: string,
+  ) {
+    const existing = this.linkedIdentities.find((i) => i.provider === provider);
+    if (!existing) {
+      this.linkedIdentities.push({
+        provider,
+        providerUserId,
+        providerEmail,
+        providerName,
+        providerAvatarUrl,
+      });
     }
   }
 
-  makeDeleted() {
-    if (this.deletedAt !== null) {
-      throw new Error('Entity already deleted');
-    }
-    this.deletedAt = new Date();
+  updateProfile(name?: string, telephone?: string, imgUrl?: string, isSubscribed?: boolean) {
+    if (name) this.name = name;
+    if (telephone) this.telephone = telephone;
+    if (imgUrl) this.imgUrl = imgUrl;
+    if (isSubscribed !== undefined) this.isSubscribed = isSubscribed;
   }
 
-  //
+  updateLanguage(lang: Language) {
+    this.lang = lang;
+  }
+
+  updateRole(role: Role) {
+    this.role = role;
+  }
+
   setEmailConfirmationCode(code: string, expirationDate: Date) {
     this.emailConfirmation.confirmationCode = code;
     this.emailConfirmation.expirationDate = expirationDate;
@@ -108,12 +181,7 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-// Регистрирует методы сущности в схеме.
 UserSchema.loadClass(User);
 
-// Типизация документа.
 export type UserDocument = HydratedDocument<User>;
-
-// Типизация модели + статические методы.
 export type UserModelType = Model<UserDocument> & typeof User;
-

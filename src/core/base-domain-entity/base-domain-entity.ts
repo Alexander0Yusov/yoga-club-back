@@ -1,28 +1,22 @@
-import {
-  BeforeUpdate,
-  Column,
-  CreateDateColumn,
-  DeleteDateColumn,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Prop } from '@nestjs/mongoose';
 
 export abstract class BaseDomainEntity {
-  // extends BaseEntity на случай неиспользования трехслойн архитектуры,
-  // и сущности станут моделями
-  @PrimaryGeneratedColumn()
-  public id: number;
-
-  @CreateDateColumn({ type: 'timestamptz' })
+  public id: string;
   public createdAt: Date;
-
-  @UpdateDateColumn({
-    type: 'timestamptz',
-    nullable: true,
-    default: null,
-  })
   public updatedAt: Date | null;
 
-  @DeleteDateColumn({ type: 'timestamptz' })
+  @Prop({ type: Date, default: null })
   public deletedAt: Date | null;
+
+  constructor() {
+    this.deletedAt = null;
+  }
+
+  public softDelete(): void {
+    this.deletedAt = new Date();
+  }
+
+  public restore(): void {
+    this.deletedAt = null;
+  }
 }

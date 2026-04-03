@@ -2,11 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { MeViewDto, UserViewDto } from '../../dto/user/user-view.dto';
 import { GetUsersQueryParams } from '../../dto/user/get-users-query-params.input-dto';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
-import { DataSource, ILike, IsNull, Repository } from 'typeorm';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+
 import { User, type UserModelType } from '../../domain/user/user.entity';
 import { InjectModel } from '@nestjs/mongoose';
-import { ObjectId } from 'typeorm/browser';
 
 @Injectable()
 export class UsersQueryRepository {
@@ -16,7 +14,7 @@ export class UsersQueryRepository {
     const user = await this.UserModel.findOne({
       _id: id,
       deletedAt: null,
-    }).select('name email');
+    }).select('name email role lang imgUrl telephone isSubscribed linkedIdentities');
 
     if (!user) {
       throw new NotFoundException('User not found');

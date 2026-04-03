@@ -9,6 +9,9 @@ import { UserAccountsModule } from './modules/user-accounts/user-accounts.module
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { MailerModule } from './modules/mailer/mailer.module';
 import { CoreModule } from './core/core.module';
+import { ContentModule } from './modules/content/content.module';
+import { BookingsModule } from './modules/bookings/bookings.module';
+import { MediaModule } from './modules/media/media.module';
 import { CoreConfig } from './core/core.config';
 import { ThrottlerModule } from '@nestjs/throttler';
 
@@ -47,6 +50,9 @@ import { MongooseModule } from '@nestjs/mongoose';
     NotificationsModule,
     MailerModule,
     CoreModule,
+    ContentModule,
+    BookingsModule,
+    MediaModule,
     configModule,
   ],
   controllers: [AppController],

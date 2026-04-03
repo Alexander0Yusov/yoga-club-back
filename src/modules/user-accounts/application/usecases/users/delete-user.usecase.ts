@@ -3,7 +3,7 @@ import { UserContextDto } from '../../../guards/dto/user-context.dto';
 import { UsersRepository } from '../../../infrastructure/users.repository';
 
 export class DeleteUserCommand {
-  constructor(public dto: UserContextDto) {}
+  constructor(public dto: { userId: string }) {}
 }
 
 // @CommandHandler(DeleteUserCommand)
@@ -12,7 +12,7 @@ export class DeleteUserCommand {
 // {
 //   constructor(private usersRepository: UsersRepository) {}
 
-//   async execute({ dto: { id } }: DeleteUserCommand): Promise<void> {
-//     await this.usersRepository.softDeleteById(Number(id));
+//   async execute({ dto: { userId } }: DeleteUserCommand): Promise<void> {
+//     await this.usersRepository.softDeleteById(Number(userId));
 //   }
 // }

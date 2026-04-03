@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { UserInputDto } from '../dto/user/user-input.dto';
-import { User } from '../domain/user/user.entity';
+import { User, Language } from '../domain/user/user.entity';
 import { UsersRepository } from '../infrastructure/users.repository';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
@@ -19,4 +19,12 @@ export class UsersService {
     private usersRepository: UsersRepository,
     private emailService: EmailService,
   ) {}
+
+  async updateLanguage(userId: string, lang: Language): Promise<void> {
+    const user = await this.usersRepository.findById(userId);
+    if (user) {
+      user.updateLanguage(lang);
+      await this.usersRepository.save(user);
+    }
+  }
 }

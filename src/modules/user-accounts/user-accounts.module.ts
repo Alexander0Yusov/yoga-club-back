@@ -31,14 +31,17 @@ import { UpdateSessionUseCase } from './application/usecases/sessions/update-ses
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { CreateUserUseCase } from './application/usecases/users/create-user.usecase';
+import { OAuthLoginUseCase } from './application/usecases/auth/oauth-login.usecase';
 // import { DeleteUserUseCase } from './application/usecases/users/delete-user.usecase';
 import { AuthEmailConfirmationUseCase } from './application/usecases/auth/auth-email-confirmation.usecase';
 import { AuthEmailResendConfirmationUseCase } from './application/usecases/auth/auth-email-resend-confirmation.usecase';
 import { AuthRegisterUseCase } from './application/usecases/auth/auth-register.usecase';
 import { AuthSendRecoveryPasswordCodeUseCase } from './application/usecases/auth/auth-send-recovery-password-code.usecase';
 import { AuthNewPasswordApplyingUseCase } from './application/usecases/auth/auth-new-password-applying.usecase';
+import { GoogleLoginUseCase } from './application/usecases/auth/google-login.usecase';
+import { UpdateUserProfileUseCase } from './application/usecases/users/update-user-profile.usecase';
 // import { GetMeHandler } from './application/usecases/auth/get-me.query-handler';
-import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { User, UserSchema } from './domain/user/user.entity';
 // import { EmailConfirmation } from './domain/user/email-confirmation.entity';
 // import { PasswordRecovery } from './domain/user/password-recovery.entity';
@@ -63,12 +66,18 @@ export const CommandHandlers = [
   AuthSendRecoveryPasswordCodeUseCase,
   AuthNewPasswordApplyingUseCase,
   AuthRegisterUseCase,
+  OAuthLoginUseCase,
+  GoogleLoginUseCase,
+  UpdateUserProfileUseCase,
 ];
 
 export const QueryHandlers = [
   // GetAllSessionsHandler,
   // GetMeHandler,
 ];
+import { MediaModule } from '../media/media.module';
+
+import { LanguageSyncInterceptor } from './interceptors/language-sync.interceptor';
 
 @Module({
   imports: [
@@ -84,6 +93,7 @@ export const QueryHandlers = [
       { name: 'User', schema: UserSchema },
       { name: Session.name, schema: SessionSchema },
     ]),
+    MediaModule,
   ],
   controllers: [UsersController, AuthController, SecurityDevicesController],
   providers: [
@@ -111,8 +121,8 @@ export const QueryHandlers = [
     ...CommandHandlers,
     ...QueryHandlers,
     //
-    // Пример инстанцирования через токен.
-    // Если надо внедрить несколько раз один и тот же класс.
+    // Р°СЃС‚СЂРѕР№РєРё РїСЂРµРґРѕСЃС‚Р°РІР»РµРЅРёСЏ С‚РѕРєРµРЅРѕРІ
+    // РёР¶Рµ РёРґРµС‚ РѕСЃРЅРѕРІРЅР°СЏ РіРµРЅРµСЂР°С†РёСЏ JWT Рё СЂРµС„СЂРµС€-С‚РѕРєРµРЅРѕРІ.
     {
       provide: ACCESS_TOKEN_STRATEGY_INJECT_TOKEN,
       useFactory: (coreConfig: CoreConfig): JwtService => {
@@ -138,7 +148,8 @@ export const QueryHandlers = [
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    LanguageSyncInterceptor,
   ],
-  exports: [UsersQueryRepository],
+  exports: [UsersQueryRepository, LanguageSyncInterceptor],
 })
 export class UserAccountsModule {}

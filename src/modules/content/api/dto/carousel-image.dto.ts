@@ -1,0 +1,22 @@
+import { IsOptional, ValidateNested, IsString, IsNotEmpty } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+import { LocalizedText } from 'src/modules/content/domain/localized-text.vo';
+
+export class CarouselImageDto {
+  @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/v123/yoga/sample.jpg' })
+  @IsNotEmpty()
+  @IsString()
+  public url: string;
+
+  @ApiProperty({ type: () => LocalizedText, required: false })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedText)
+  public alt?: LocalizedText;
+
+  @ApiProperty({ example: 'yoga/sample', required: false })
+  @IsOptional()
+  @IsString()
+  public publicId?: string;
+}

@@ -10,10 +10,16 @@ import {
   Put,
   Query,
   UseGuards,
+  UseInterceptors,
+  Patch,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
+  UploadedFile,
 } from '@nestjs/common';
 import { UsersService } from '../application/users.service';
 import { UserInputDto } from '../dto/user/user-input.dto';
-import { UserViewDto } from '../dto/user/user-view.dto';
+import { MeViewDto, UserViewDto, UserProfileUpdateViewDto } from '../dto/user/user-view.dto';
 import { UsersQueryRepository } from '../infrastructure/query/users-query.repository';
 import { PaginatedViewDto } from '../../../core/dto/base.paginated.view-dto';
 import { GetUsersQueryParams } from '../dto/user/get-users-query-params.input-dto';
@@ -26,6 +32,7 @@ import { DeleteUserCommand } from '../application/usecases/users/delete-user.use
 import { SkipThrottle } from '@nestjs/throttler';
 import {
   ApiBasicAuth,
+  ApiBody,
   ApiExtraModels,
   ApiOperation,
   ApiParam,
@@ -33,7 +40,19 @@ import {
   ApiResponse,
   ApiTags,
   getSchemaPath,
+  ApiConsumes,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from '../guards/bearer/jwt-auth.guard';
+import { ExtractUserFromRequest } from '../guards/decorators/param/extract-user-from-request.decorator';
+import { UserContextDto } from '../guards/dto/user-context.dto';
+import { UpdateUserProfileDto } from '../dto/user/update-user-profile.dto';
+import { UpdateUserProfileApiDto } from '../dto/user/update-user-profile-api.dto';
+import { UpdateUserProfileCommand } from '../application/usecases/users/update-user-profile.usecase';
+
+export const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // 2MB
+export const ALLOWED_FILE_TYPES = /(jpg|jpeg|png|webp)$/;
 
 @SkipThrottle()
 @ApiTags('Users')
@@ -277,6 +296,70 @@ export class UsersController {
   })
   async deleteBySa(@Param('id') id: string): Promise<void> {
     // return this.usersService.deleteUser(id);
-    await this.commandBus.execute(new DeleteUserCommand({ id }));
+    await this.commandBus.execute(new DeleteUserCommand({ userId: id }));
+  }
+
+  @Patch('users/me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Update current user profile',
+    description: 'Updates the authenticated user profile. Supports partial updates for name, telephone, subscription status, and avatar upload (multipart/form-data).',
+  })
+  @ApiBody({
+    type: UpdateUserProfileApiDto,
+    description: 'Profile update data with optional avatar file',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Profile updated successfully',
+    type: UserProfileUpdateViewDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Validation failed (e.g., file too large, invalid phone format)',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Missing or invalid Bearer token',
+  })
+  @UseInterceptors(FileInterceptor('avatar'))
+  @HttpCode(HttpStatus.OK)
+  async updateProfile(
+    @ExtractUserFromRequest() user: UserContextDto,
+    @Body() body: UpdateUserProfileDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: FILE_SIZE_LIMIT }),
+          new FileTypeValidator({ fileType: ALLOWED_FILE_TYPES }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    file?: Express.Multer.File,
+  ): Promise<UserProfileUpdateViewDto> {
+    const rawIsSubscribed = body.isSubscribed as unknown;
+    const normalizedIsSubscribed =
+      rawIsSubscribed === undefined
+        ? undefined
+        : rawIsSubscribed === true ||
+            rawIsSubscribed === 'true' ||
+            rawIsSubscribed === 1 ||
+            rawIsSubscribed === '1';
+
+    await this.commandBus.execute(
+      new UpdateUserProfileCommand(
+        user.id,
+        body.name,
+        body.telephone,
+        file,
+        normalizedIsSubscribed,
+      ),
+    );
+
+    const updatedUser = (await this.usersRepository.findById(user.id))!;
+    return UserProfileUpdateViewDto.mapToView(updatedUser);
   }
 }

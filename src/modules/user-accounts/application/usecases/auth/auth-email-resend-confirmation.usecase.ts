@@ -45,7 +45,7 @@ export class AuthEmailResendConfirmationUseCase
     await this.usersRepository.save(user);
 
     this.emailService
-      .sendConfirmationEmail(body.email, confirmCode)
+      .sendConfirmationEmail(body.email, confirmCode, user.lang)
       .catch(console.error);
   }
 }

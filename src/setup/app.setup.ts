@@ -5,8 +5,9 @@ import { globalPrefixSetup } from './global-prefix.setup';
 import { DomainHttpExceptionsFilter } from '../core/exceptions/filters/domain-exceptions.filter';
 import { AllHttpExceptionsFilter } from '../core/exceptions/filters/all-exceptions.filter';
 import cookieParser from 'cookie-parser';
+import { CoreConfig } from '../core/core.config';
 
-export function appSetup(app: INestApplication) {
+export function appSetup(app: INestApplication, coreConfig: CoreConfig) {
   pipesSetup(app);
   globalPrefixSetup(app);
   swaggerSetup(app);
@@ -21,6 +22,17 @@ export function appSetup(app: INestApplication) {
     new AllHttpExceptionsFilter(),
     new DomainHttpExceptionsFilter(),
   );
-  app.use(cookieParser());
-  app.enableCors();
+  app.use(cookieParser(coreConfig.cookieSecret));
+  app.enableCors({
+  // Указываем конкретный адрес фронтенда. "*" нельзя использовать вместе с credentials: true
+  origin: "http://localhost:3000", 
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type", 
+    "Authorization", 
+    "Accept-Language", 
+    "x-client-lang"
+  ],
+});
 }

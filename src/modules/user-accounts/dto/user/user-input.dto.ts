@@ -1,24 +1,11 @@
-import { IsEmail, IsString, Length, Matches } from 'class-validator';
+import { IsEmail, IsString, Length } from 'class-validator';
 import { Trim } from '../../../../core/decorators/transform/trim';
 import {
-  emailConstraints,
-  loginConstraints,
   passwordConstraints,
 } from '../../domain/user/user.entity';
-import { IsStringWithTrim } from '../../../../core/decorators/validation/is-string-with-trim';
-import { Optional } from '@nestjs/common';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UserInputDto {
-  @ApiPropertyOptional({
-    example: 'john_doe',
-    minLength: loginConstraints.minLength,
-    maxLength: loginConstraints.maxLength,
-  })
-  @Optional()
-  @IsStringWithTrim(loginConstraints.minLength, loginConstraints.maxLength)
-  name: string;
-
   @ApiProperty({
     example: 'qwerty',
     minLength: passwordConstraints.minLength,

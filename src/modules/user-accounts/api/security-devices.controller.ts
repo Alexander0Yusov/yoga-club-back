@@ -74,7 +74,7 @@ export class SecurityDevicesController {
   ): Promise<void> {
     await this.commandBus.execute(
       new TerminateAllExcludeCurrentSessionCommand({
-        id: deviceContext.id,
+        userId: deviceContext.id,
         deviceId: deviceContext.deviceId,
       }),
     );
@@ -102,7 +102,7 @@ export class SecurityDevicesController {
   ): Promise<void> {
     await this.commandBus.execute(
       new TerminateByIdCommand({
-        id: deviceContext.id,
+        userId: deviceContext.id,
         deviceId: id,
       }),
     );
