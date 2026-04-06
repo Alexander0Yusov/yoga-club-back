@@ -8,6 +8,7 @@ import { PracticeBenefitRepository } from '../../infrastructure/practice-benefit
 import { AboutMeCardRepository } from '../../infrastructure/about-me-card.repository';
 import { YogaDirectionRepository } from '../../infrastructure/yoga-direction.repository';
 import { EventRefsPanelRepository } from '../../infrastructure/event-refs-panel.repository';
+import { MetaSettingsRepository } from '../../infrastructure/meta-settings.repository';
 import { LocalizedTextMapper } from '../../api/mappers/localized-text.mapper';
 import { SectionContentType } from '../../domain/section.entity';
 import { HomePageViewModel } from '../../api/view-models/home-page.view-model';
@@ -28,6 +29,7 @@ export class GetHomePageQueryHandler implements IQueryHandler<GetHomePageQuery> 
     private readonly aboutRepo: AboutMeCardRepository,
     private readonly yogaRepo: YogaDirectionRepository,
     private readonly eventRefsRepo: EventRefsPanelRepository,
+    private readonly metaSettingsRepo: MetaSettingsRepository,
   ) {}
 
   async execute(query: GetHomePageQuery): Promise<HomePageViewModel> {
@@ -44,6 +46,7 @@ export class GetHomePageQueryHandler implements IQueryHandler<GetHomePageQuery> 
       aboutCards,
       yogaDirections,
       eventRefsPanels,
+      homeSettings,
     ] = await Promise.all([
       this.sectionsRepo.findActive(),
       this.heroRepo.findActive(),
@@ -54,11 +57,23 @@ export class GetHomePageQueryHandler implements IQueryHandler<GetHomePageQuery> 
       this.aboutRepo.findActive(),
       this.yogaRepo.findActive(),
       this.eventRefsRepo.findActive(),
+      this.metaSettingsRepo.findByPageKey('home'),
     ]);
 
     const resolve = (text: any) => LocalizedTextMapper.resolve(text, lang);
     const resolveImage = (image: any) =>
       image ? { url: image.url, alt: resolve(image.alt) } : undefined;
+
+    // Page Meta mapping
+    const meta = homeSettings?.seo ? {
+      title: resolve(homeSettings.seo.title),
+      description: resolve(homeSettings.seo.description),
+      imageUrl: homeSettings.seo.imageUrl,
+      alt: resolve(homeSettings.seo.alt),
+    } : {
+      title: '',
+      description: '',
+    };
 
     // Data Mapping according to "Shelves" Approach
     const mappedSections = sections.map((section) => {
@@ -66,16 +81,17 @@ export class GetHomePageQueryHandler implements IQueryHandler<GetHomePageQuery> 
 
       switch (section.for) {
         case SectionContentType.HERO_INTRO:
-          content = heroIntros.length > 0 ? {
+          content = heroIntros.length > 0 ? [{
+            id: heroIntros[0]._id.toString(),
             title: resolve(heroIntros[0].title),
             text1: resolve(heroIntros[0].text1),
             text2: resolve(heroIntros[0].text2),
             image: resolveImage(heroIntros[0].image),
-          } : null;
+          }] : [];
           break;
 
         case SectionContentType.PRACTICE_BENEFITS:
-          content = practiceBenefits.length > 0 ? {
+          content = practiceBenefits.length > 0 ? [{
             id: practiceBenefits[0]._id.toString(),
             text_1: resolve(practiceBenefits[0].text_1),
             text_2: resolve(practiceBenefits[0].text_2),
@@ -88,7 +104,7 @@ export class GetHomePageQueryHandler implements IQueryHandler<GetHomePageQuery> 
             text_9: resolve(practiceBenefits[0].text_9),
             text_10: resolve(practiceBenefits[0].text_10),
             image: resolveImage(practiceBenefits[0].image),
-          } : null;
+          }] : [];
           break;
 
         case SectionContentType.ABOUT_ME_CARDS:
@@ -106,7 +122,7 @@ export class GetHomePageQueryHandler implements IQueryHandler<GetHomePageQuery> 
             } : undefined,
           }));
           break;
-
+// ... (lines 125-179 remain similar but I must ensure I don't break the switch)
         case SectionContentType.ADVANTAGES:
           content = advantages.map(i => ({
             id: i._id.toString(),
@@ -149,11 +165,11 @@ export class GetHomePageQueryHandler implements IQueryHandler<GetHomePageQuery> 
           break;
 
         case SectionContentType.EVENT_REFS_PANEL:
-          content = eventRefsPanels.length > 0 ? {
+          content = eventRefsPanels.length > 0 ? [{
             id: eventRefsPanels[0]._id.toString(),
             leftRefImage: resolveImage(eventRefsPanels[0].leftRefImage),
             rightRefImage: resolveImage(eventRefsPanels[0].rightRefImage),
-          } : null;
+          }] : [];
           break;
 
         case SectionContentType.BOOKINGS:
@@ -163,6 +179,7 @@ export class GetHomePageQueryHandler implements IQueryHandler<GetHomePageQuery> 
       }
 
       return {
+        id: section._id.toString(),
         title: resolve(section.title),
         subtitle_1: resolve(section.subtitle_1),
         subtitle_2: resolve(section.subtitle_2),
@@ -173,6 +190,7 @@ export class GetHomePageQueryHandler implements IQueryHandler<GetHomePageQuery> 
 
     return {
       language: lang,
+      meta,
       sections: mappedSections,
     };
   }

@@ -7,13 +7,13 @@ import { LocalizedText } from './localized-text.vo';
 import { CarouselImage } from './carousel-image.vo';
 
 export class CardBlock {
-  @Prop({ type: LocalizedText })
+  @Prop({ type: LocalizedText, _id: false })
   public title?: LocalizedText;
 
-  @Prop({ type: LocalizedText })
+  @Prop({ type: LocalizedText, _id: false })
   public text?: LocalizedText;
 
-  @Prop({ type: CarouselImage })
+  @Prop({ type: CarouselImage, _id: false })
   public image?: CarouselImage;
 }
 

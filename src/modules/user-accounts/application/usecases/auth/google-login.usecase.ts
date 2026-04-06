@@ -48,11 +48,11 @@ export class GoogleLoginUseCase
         throw new UnauthorizedException('Invalid token payload');
       }
 
-      const { sub, email, name, picture } = payload;
+      const { sub, email, name, picture, locale } = payload;
 
       // 3. Sync User via existing OAuthLoginCommand
       const userId = await this.commandBus.execute(
-        new OAuthLoginCommand('google', sub, email, name, picture),
+        new OAuthLoginCommand('google', sub, email, name, picture, locale),
       );
 
       return userId;

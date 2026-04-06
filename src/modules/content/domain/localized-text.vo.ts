@@ -1,32 +1,46 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Prop } from '@nestjs/mongoose';
+import { Prop, Schema } from '@nestjs/mongoose';
+import { IsString, IsNotEmpty, IsOptional, MinLength } from 'class-validator';
+import { Expose } from 'class-transformer';
 
 /**
  * BSON Embedded localized texts for MongoDB.
  */
+@Schema({ _id: false })
 export class LocalizedText {
-  @ApiProperty({ example: 'Текст на русском' })
-  @Prop({ required: true })
+  @ApiProperty({ example: 'Текст на русском', description: 'Russian translation', minLength: 2 })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  @MinLength(2, { message: 'Текст должен быть не короче 2 символов' })
+  @Prop({ type: String })
   public ru: string;
 
-  @ApiProperty({ example: 'English text', required: false })
-  @Prop()
+  @ApiProperty({ example: 'English text', required: false, description: 'English translation', minLength: 2 })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  @MinLength(2, { message: 'Текст должен быть не короче 2 символов' })
+  @Prop({ type: String })
   public en?: string;
 
-  @ApiProperty({ example: 'Deutscher Text', required: false })
-  @Prop()
+  @ApiProperty({ example: 'Deutscher Text', required: false, description: 'German translation', minLength: 2 })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  @MinLength(2, { message: 'Текст должен быть не короче 2 символов' })
+  @Prop({ type: String })
   public de?: string;
 
-  @ApiProperty({ example: 'Текст українською', required: false })
-  @Prop()
+  @ApiProperty({ example: 'Текст українською', required: false, description: 'Ukrainian translation', minLength: 2 })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  @MinLength(2, { message: 'Текст должен быть не короче 2 символов' })
+  @Prop({ type: String })
   public uk?: string;
 
-  constructor(ru: string, partial?: Partial<LocalizedText>) {
-    this.ru = ru;
-    if (partial) {
-      this.en = partial.en;
-      this.de = partial.de;
-      this.uk = partial.uk;
-    }
+  constructor(partial?: Partial<LocalizedText>) {
+    Object.assign(this, partial);
   }
 }

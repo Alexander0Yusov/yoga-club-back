@@ -5,10 +5,10 @@ import { CarouselImage } from './carousel-image.vo';
 
 @Schema({ timestamps: true })
 export class EventRefsPanel extends ContentBaseEntity {
-  @Prop({ type: CarouselImage, required: true })
+  @Prop({ type: CarouselImage, required: true, _id: false })
   public leftRefImage: CarouselImage;
 
-  @Prop({ type: CarouselImage, required: true })
+  @Prop({ type: CarouselImage, required: true, _id: false })
   public rightRefImage: CarouselImage;
 }
 

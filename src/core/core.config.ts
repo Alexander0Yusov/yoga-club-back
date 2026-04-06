@@ -106,6 +106,11 @@ export class CoreConfig {
   })
   refreshTokenExpireIn: JwtSignOptions['expiresIn'];
 
+  @IsNotEmpty({
+    message: 'Set IS_THROTTLE_ENABLED',
+  })
+  isThrottleEnabled: boolean;
+
   constructor(private configService: ConfigService<any, true>) {
     this.port = Number(this.configService.get('PORT'));
     //
@@ -131,6 +136,14 @@ export class CoreConfig {
     );
     this.isUserAutomaticallyConfirmed = autoConfirmValue ?? false;
 
+    const throttleEnabledValue = configValidationUtility.convertToBoolean(
+      this.configService.get('IS_THROTTLE_ENABLED'),
+    );
+
+    // Default: enabled in production, disabled otherwise
+    this.isThrottleEnabled =
+      throttleEnabledValue ?? this.env === Environments.PRODUCTION;
+
     // Mandatory Safety: If NODE_ENV === 'production', this flag must always be forced to false
     if (this.env === Environments.PRODUCTION) {
       this.isUserAutomaticallyConfirmed = false;
@@ -139,6 +152,12 @@ export class CoreConfig {
     console.log(
       `[AUTH] Automatic user confirmation is ${
         this.isUserAutomaticallyConfirmed ? 'ENABLED' : 'DISABLED'
+      }.`,
+    );
+
+    console.log(
+      `[THROTTLE] Throttling is ${
+        this.isThrottleEnabled ? 'ENABLED' : 'DISABLED'
       }.`,
     );
 

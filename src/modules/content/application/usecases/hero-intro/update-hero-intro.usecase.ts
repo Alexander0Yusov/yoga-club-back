@@ -38,11 +38,19 @@ export class UpdateHeroIntroUseCase implements ICommandHandler<UpdateHeroIntroCo
         if (id) orphanPublicIds.push(id);
       }
 
-      // 2. Translations
+      // 2. Failsafe Translations
+      const translate = async (vo: any) => {
+        try {
+          return await this.translationService.translateMissing(vo);
+        } catch (error) {
+          return vo; // Fallback to provided data
+        }
+      };
+
       const [title, text1, text2] = await Promise.all([
-        dto.title ? this.translationService.translateMissing(dto.title) : undefined,
-        dto.text1 ? this.translationService.translateMissing(dto.text1) : undefined,
-        dto.text2 ? this.translationService.translateMissing(dto.text2) : undefined,
+        dto.title ? translate(dto.title) : undefined,
+        dto.text1 ? translate(dto.text1) : undefined,
+        dto.text2 ? translate(dto.text2) : undefined,
       ]);
 
       // 3. Image Update
@@ -55,7 +63,7 @@ export class UpdateHeroIntroUseCase implements ICommandHandler<UpdateHeroIntroCo
         image = new CarouselImage(res.url, alt, res.publicId);
       } else if (dto.image) {
         // If only JSON data updated (e.g. alt changed)
-        const alt = dto.image.alt ? await this.translationService.translateMissing(dto.image.alt) : (title || heroIntro.title);
+        const alt = dto.image.alt ? await translate(dto.image.alt) : (title || heroIntro.title);
         image = new CarouselImage(dto.image.url, alt, dto.image.publicId);
         
         // If the URL hasn't changed, we don't want to delete the old image
@@ -77,7 +85,7 @@ export class UpdateHeroIntroUseCase implements ICommandHandler<UpdateHeroIntroCo
       // 5. Cleanup Old Assets
       await Promise.allSettled(orphanPublicIds.map(id => this.cloudinaryService.deleteImage(id)));
     } catch (error) {
-      // Rollback New Uploads
+      // Rollback New Uploads only
       await Promise.allSettled(newUploads.map(id => this.cloudinaryService.deleteImage(id)));
       throw error;
     }

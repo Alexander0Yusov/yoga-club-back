@@ -11,15 +11,19 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
+  Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { CommandBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBearerAuth, ApiResponse, ApiOkResponse, ApiHeader, ApiQuery } from '@nestjs/swagger';
 import { CreateHeroIntroCommand } from '../application/usecases/hero-intro/create-hero-intro.usecase';
 import { UpdateHeroIntroCommand } from '../application/usecases/hero-intro/update-hero-intro.usecase';
 import { DeleteHeroIntroCommand } from '../application/usecases/hero-intro/delete-hero-intro.usecase';
 import { CreateHeroIntroDto, UpdateHeroIntroDto } from './dto/hero-intro.dto';
-import { ParseJsonPipe } from './pipes/parse-json.pipe';
+import { HeroIntroViewModel } from './view-models/hero-intro.view-model';
+import { LocalizedTextMapper } from './mappers/localized-text.mapper';
 import { JwtAuthGuard } from '../../user-accounts/guards/bearer/jwt-auth.guard';
 import { HeroIntroRepository } from '../infrastructure/hero-intro.repository';
 import { APIErrorResult } from 'src/core/dto/error-result.dto';
@@ -37,9 +41,26 @@ export class HeroIntroController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all active hero intros' })
-  async findAll() {
-    return this.repository.findAll();
+  @ApiOperation({ summary: 'Get all active hero intros with localization' })
+  @ApiQuery({ name: 'lang', required: false, enum: ['ru', 'en', 'de', 'uk'], description: 'Requested language' })
+  @ApiHeader({ name: 'Accept-Language', required: false, description: 'Standard HTTP language header' })
+  @ApiOkResponse({ type: [HeroIntroViewModel], description: 'Returns localized active hero sections' })
+  async findAll(@Query('lang') langQuery?: string): Promise<HeroIntroViewModel[]> {
+    const lang = langQuery || 'ru';
+    const items = await this.repository.findAll();
+
+    return items.map(item => ({
+      id: item._id.toString(),
+      title: LocalizedTextMapper.resolve(item.title, lang),
+      text1: LocalizedTextMapper.resolve(item.text1, lang),
+      text2: LocalizedTextMapper.resolve(item.text2, lang),
+      isActive: item.isActive,
+      orderIndex: item.orderIndex,
+      image: item.image ? {
+        url: item.image.url,
+        alt: LocalizedTextMapper.resolve(item.image.alt, lang),
+      } : undefined,
+    }));
   }
 
   @Post()
@@ -53,9 +74,11 @@ export class HeroIntroController {
     { name: 'image', maxCount: 1 },
   ], MULTER_CONFIG))
   async create(
-    @Body(new ParseJsonPipe(['title', 'text1', 'text2', 'isActive'])) payload: CreateHeroIntroDto,
+    @Body() payload: CreateHeroIntroDto,
     @UploadedFiles() files: { image?: Express.Multer.File[] },
+    @Req() request: Request,
   ): Promise<string> {
+    console.log('[1. CONTROLLER RAW BODY]:', request.body);
     return this.commandBus.execute(new CreateHeroIntroCommand(
       payload,
       files.image?.[0],
@@ -75,9 +98,11 @@ export class HeroIntroController {
   ], MULTER_CONFIG))
   async update(
     @Param('id') id: string,
-    @Body(new ParseJsonPipe(['title', 'text1', 'text2', 'image', 'isActive'])) payload: UpdateHeroIntroDto,
+    @Body() payload: UpdateHeroIntroDto,
     @UploadedFiles() files: { image?: Express.Multer.File[] },
+    @Req() request: Request,
   ): Promise<void> {
+    console.log('[1. CONTROLLER RAW BODY]:', request.body);
     await this.commandBus.execute(new UpdateHeroIntroCommand(
       id,
       payload,

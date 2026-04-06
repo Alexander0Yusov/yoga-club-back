@@ -8,7 +8,7 @@ export class Review extends ContentBaseEntity {
   @Prop({ type: String, required: true })
   public authorId: string;
 
-  @Prop({ type: LocalizedText, required: true })
+  @Prop({ type: LocalizedText, required: true, _id: false })
   public text: LocalizedText;
 
   @Prop({ type: Number, required: true, min: 1, max: 5 })

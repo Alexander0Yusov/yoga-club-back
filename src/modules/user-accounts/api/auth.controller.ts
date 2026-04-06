@@ -9,6 +9,7 @@ import {
   Res,
   UseGuards,
   UseInterceptors,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -62,6 +63,10 @@ export class AuthController {
     private usersQueryRepository: UsersQueryRepository,
     private usersRepository: UsersRepository,
   ) {}
+
+  private getCookieSecureFlag(): boolean {
+    return process.env.NODE_ENV === 'production';
+  }
 
   @Post('register')
   @Throttle({ default: {} })
@@ -175,7 +180,7 @@ export class AuthController {
 
     response.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: true, // true in prod, false in dev for http
+      secure: this.getCookieSecureFlag(),
     });
 
     return { accessToken };
@@ -215,20 +220,35 @@ export class AuthController {
   ): Promise<{ accessToken: string }> {
     console.log(77777, 'refreshToken');
 
+    // Fetch fresh user state from DB to avoid issuing stale data from incoming token
+    const user = await this.usersRepository.findById(deviceContext.id);
+    if (!user) {
+      throw new UnauthorizedException('User session invalid or expired');
+    }
+
     const { accessToken, refreshToken } = await this.commandBus.execute(
       new CreateTokensPairCommand({
-        userId: deviceContext.id,
+        userId: user.id,
         deviceId: deviceContext.deviceId,
-        lang: deviceContext.lang,
-        isLanguageManual: deviceContext.isLanguageManual,
+        lang: user.lang,
+        isLanguageManual: user.isLanguageManual,
       }),
     );
 
     await this.commandBus.execute(new UpdateSessionCommand({ refreshToken }));
 
+    // Re-sync language cookie based on DB state to ensure UI reflects latest choice
+    response.cookie('lang_synced', user.lang, {
+      maxAge: 86400000, // 24h
+      signed: true,
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+    });
+
     response.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: true, // true in prod, false in dev for http
+      secure: this.getCookieSecureFlag(),
     });
 
     return { accessToken };
@@ -481,12 +501,15 @@ export class AuthController {
 
     // For googleLogin, we need the user to get their lang/isLanguageManual.
     const user = await this.usersRepository.findById(userId);
-    
+    if (!user) {
+      throw new UnauthorizedException('User not found after Google login');
+    }
+
     const { accessToken, refreshToken } = await this.commandBus.execute(
       new CreateTokensPairCommand({
         userId,
-        lang: user?.lang || Language.RU,
-        isLanguageManual: user?.isLanguageManual || false,
+        lang: user.lang,
+        isLanguageManual: user.isLanguageManual,
       }),
     );
 
@@ -498,9 +521,18 @@ export class AuthController {
       }),
     );
 
-    response.cookie('refreshToken', refreshToken, {
+    // Anti-Bounce Fix: Set lang_synced cookie after Google login
+    response.cookie('lang_synced', user.lang, {
+      maxAge: 86400000, // 24h
+      signed: true,
       httpOnly: true,
       secure: true,
+      sameSite: 'lax',
+    });
+
+    response.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: this.getCookieSecureFlag(),
     });
 
     return { accessToken };

@@ -6,10 +6,10 @@ import { CarouselImage } from './carousel-image.vo';
 
 @Schema({ timestamps: true })
 export class DemoVideoCard extends ContentBaseEntity {
-  @Prop({ type: LocalizedText, required: true })
+  @Prop({ type: LocalizedText, required: true, _id: false })
   public title: LocalizedText;
 
-  @Prop({ type: LocalizedText, required: true })
+  @Prop({ type: LocalizedText, required: true, _id: false })
   public description: LocalizedText;
 
   @Prop({ type: String, required: true })
@@ -18,7 +18,7 @@ export class DemoVideoCard extends ContentBaseEntity {
   @Prop({ type: String, required: true })
   public embedUrl: string;
 
-  @Prop({ type: CarouselImage, required: true })
+  @Prop({ type: CarouselImage, required: true, _id: false })
   public thumbnail: CarouselImage;
 
   @Prop({ type: Date })

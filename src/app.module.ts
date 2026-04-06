@@ -35,14 +35,18 @@ import { MongooseModule } from '@nestjs/mongoose';
       inject: [CoreConfig],
     }),
 
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          name: 'default',
-          ttl: 10000,
-          limit: 5,
-        },
-      ],
+    ThrottlerModule.forRootAsync({
+      inject: [CoreConfig],
+      useFactory: (coreConfig: CoreConfig) => ({
+        throttlers: [
+          {
+            name: 'default',
+            ttl: 10000,
+            limit: 5,
+          },
+        ],
+        skipIf: () => !coreConfig.isThrottleEnabled,
+      }),
     }),
 
     // BloggersPlatformModule,

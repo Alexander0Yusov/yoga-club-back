@@ -105,12 +105,14 @@ export class User extends BaseDomainEntity {
     email: string,
     name?: string,
     avatarUrl?: string,
+    lang?: Language,
   ): UserDocument {
     const user = new this();
     user.email = email;
     user.name = name || email.split('@')[0];
     user.imgUrl = avatarUrl || '';
     user.role = Role.USER;
+    if (lang) user.lang = lang;
     user.linkedIdentities = [
       {
         provider,
@@ -129,6 +131,7 @@ export class User extends BaseDomainEntity {
     providerEmail: string,
     providerName?: string,
     providerAvatarUrl?: string,
+    lang?: Language,
   ) {
     const existing = this.linkedIdentities.find((i) => i.provider === provider);
     if (!existing) {
@@ -140,13 +143,31 @@ export class User extends BaseDomainEntity {
         providerAvatarUrl,
       });
     }
+
+    // Silent sync for OAuth login: only update if not manual
+    if (lang && !this.isLanguageManual) {
+      this.lang = lang;
+    }
   }
 
-  updateProfile(name?: string, telephone?: string, imgUrl?: string, isSubscribed?: boolean) {
+  updateProfile(
+    name?: string,
+    telephone?: string,
+    imgUrl?: string,
+    isSubscribed?: boolean,
+    lang?: Language | null,
+  ) {
     if (name) this.name = name;
     if (telephone) this.telephone = telephone;
     if (imgUrl) this.imgUrl = imgUrl;
     if (isSubscribed !== undefined) this.isSubscribed = isSubscribed;
+
+    if (lang === null || (lang as string) === '') {
+      this.isLanguageManual = false;
+    } else if (lang) {
+      this.lang = lang;
+      this.isLanguageManual = true;
+    }
   }
 
   updateLanguage(lang: Language) {

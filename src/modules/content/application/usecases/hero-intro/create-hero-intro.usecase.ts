@@ -26,12 +26,23 @@ export class CreateHeroIntroUseCase implements ICommandHandler<CreateHeroIntroCo
     const { dto, file } = command;
     const uploadedPublicIds: string[] = [];
 
+    console.log('DTO до перевода:', dto.title);
+    console.log('[4. FINAL DTO PROPERTY]:', dto.title);
+
     try {
-      // 1. Translations
+      // 1. Failsafe Translations
+      const translate = async (vo: any) => {
+        try {
+          return await this.translationService.translateMissing(vo);
+        } catch (error) {
+          return vo; // Fallback to provided data
+        }
+      };
+
       const [title, text1, text2] = await Promise.all([
-        this.translationService.translateMissing(dto.title),
-        this.translationService.translateMissing(dto.text1),
-        this.translationService.translateMissing(dto.text2),
+        translate(dto.title),
+        translate(dto.text1),
+        translate(dto.text2),
       ]);
 
       // 2. Image Handling
@@ -41,6 +52,9 @@ export class CreateHeroIntroUseCase implements ICommandHandler<CreateHeroIntroCo
         uploadedPublicIds.push(res.publicId);
         // Fallback alt to title
         image = new CarouselImage(res.url, title, res.publicId);
+      } else if (dto.image) {
+        const alt = dto.image.alt ? await translate(dto.image.alt) : title;
+        image = new CarouselImage(dto.image.url, alt, dto.image.publicId);
       }
 
       // 3. Assemble and Save
@@ -54,7 +68,7 @@ export class CreateHeroIntroUseCase implements ICommandHandler<CreateHeroIntroCo
       await heroIntro.save();
       return heroIntro._id.toString();
     } catch (error) {
-      // Rollback
+      // Rollback Uploads only
       await Promise.allSettled(uploadedPublicIds.map(id => this.cloudinaryService.deleteImage(id)));
       throw error;
     }

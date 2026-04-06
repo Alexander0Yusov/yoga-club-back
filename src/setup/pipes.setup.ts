@@ -59,7 +59,7 @@ export function pipesSetup(app: INestApplication) {
       // forbidNonWhitelisted: true,
 
       //Выдавать первую ошибку для каждого поля
-      stopAtFirstError: true,
+      stopAtFirstError: false,
 
       // transformOptions: { enableImplicitConversion: true },
 

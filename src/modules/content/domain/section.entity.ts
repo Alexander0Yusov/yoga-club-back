@@ -18,13 +18,13 @@ export enum SectionContentType {
 
 @Schema({ timestamps: true })
 export class Section extends ContentBaseEntity {
-  @Prop({ type: LocalizedText, required: true })
+  @Prop({ type: LocalizedText, required: true, _id: false })
   public title: LocalizedText;
 
-  @Prop({ type: LocalizedText })
+  @Prop({ type: LocalizedText, _id: false })
   public subtitle_1?: LocalizedText;
 
-  @Prop({ type: LocalizedText })
+  @Prop({ type: LocalizedText, _id: false })
   public subtitle_2?: LocalizedText;
 
   @Prop({ type: String, enum: SectionContentType, required: true })

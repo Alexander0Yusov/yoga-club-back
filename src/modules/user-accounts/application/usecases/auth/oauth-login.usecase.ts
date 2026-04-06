@@ -1,6 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { UsersRepository } from '../../../infrastructure/users.repository';
-import { User, type UserModelType } from '../../../domain/user/user.entity';
+import { User, type UserModelType, Language } from '../../../domain/user/user.entity';
 import { InjectModel } from '@nestjs/mongoose';
 
 export class OAuthLoginCommand {
@@ -10,6 +10,7 @@ export class OAuthLoginCommand {
     public readonly email: string,
     public readonly name?: string,
     public readonly avatarUrl?: string,
+    public readonly lang?: string,
   ) {}
 }
 
@@ -24,7 +25,9 @@ export class OAuthLoginUseCase
   ) {}
 
   async execute(command: OAuthLoginCommand): Promise<string> {
-    const { provider, providerUserId, email, name, avatarUrl } = command;
+    const { provider, providerUserId, email, name, avatarUrl, lang } = command;
+
+    const normalizedLang = this.normalizeLang(lang);
 
     // 1. Поиск по email
     let user = await this.usersRepository.findByEmail(email);
@@ -37,6 +40,7 @@ export class OAuthLoginUseCase
         email,
         name,
         avatarUrl,
+        normalizedLang,
       );
       await this.usersRepository.save(user);
       return user.id;
@@ -52,9 +56,19 @@ export class OAuthLoginUseCase
       email,
       name,
       avatarUrl,
+      normalizedLang,
     );
 
     await this.usersRepository.save(newUser);
     return newUser.id;
+  }
+
+  private normalizeLang(lang?: string): Language | undefined {
+    if (!lang) return undefined;
+    const match = lang.match(/^([a-z]{2})/i);
+    const code = match ? match[1].toLowerCase() : null;
+
+    const whitelist = Object.values(Language) as string[];
+    return whitelist.includes(code!) ? (code as Language) : undefined;
   }
 }

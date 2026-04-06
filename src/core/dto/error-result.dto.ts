@@ -4,7 +4,7 @@ export class FieldError {
   @ApiProperty({ example: 'Invalid value', description: 'Error message for the field' })
   message: string;
 
-  @ApiProperty({ example: 'email', description: 'Field name that caused the error' })
+  @ApiProperty({ example: 'title.ru', description: 'Field name that caused the error' })
   field: string;
 }
 

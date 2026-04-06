@@ -13,21 +13,27 @@ export class UpdateUserProfileCommand {
     public readonly telephone?: string,
     public readonly avatarFile?: Express.Multer.File,
     public readonly isSubscribed?: boolean,
+    public readonly lang?: Language | null,
   ) {}
 }
 
 @CommandHandler(UpdateUserProfileCommand)
-export class UpdateUserProfileUseCase implements ICommandHandler<UpdateUserProfileCommand> {
+export class UpdateUserProfileUseCase
+  implements ICommandHandler<UpdateUserProfileCommand>
+{
   constructor(
     private readonly usersRepository: UsersRepository,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async execute(command: UpdateUserProfileCommand): Promise<void> {
-    const { userId, name, telephone, avatarFile, isSubscribed } = command;
+    const { userId, name, telephone, avatarFile, isSubscribed, lang } = command;
     const user = await this.usersRepository.findById(userId);
     if (!user) {
-      throw new DomainException({ code: DomainExceptionCode.NotFound, message: 'User not found' });
+      throw new DomainException({
+        code: DomainExceptionCode.NotFound,
+        message: 'User not found',
+      });
     }
 
     let avatarUrl = user.imgUrl;
@@ -39,10 +45,13 @@ export class UpdateUserProfileUseCase implements ICommandHandler<UpdateUserProfi
       }
 
       avatarUrl = await this.cloudinaryService.uploadImage(avatarFile, 'avatars');
-      avatarUrl = avatarUrl.replace('/upload/', '/upload/w_256,h_256,c_fill,g_face,f_auto,q_auto,dpr_auto/');
+      avatarUrl = avatarUrl.replace(
+        '/upload/',
+        '/upload/w_256,h_256,c_fill,g_face,f_auto,q_auto,dpr_auto/',
+      );
     }
 
-    user.updateProfile(name, telephone, avatarUrl, isSubscribed);
+    user.updateProfile(name, telephone, avatarUrl, isSubscribed, lang);
     await this.usersRepository.save(user);
   }
 }

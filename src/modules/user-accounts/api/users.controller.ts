@@ -16,7 +16,9 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
   UploadedFile,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { UsersService } from '../application/users.service';
 import { UserInputDto } from '../dto/user/user-input.dto';
 import { MeViewDto, UserViewDto, UserProfileUpdateViewDto } from '../dto/user/user-view.dto';
@@ -321,14 +323,13 @@ export class UsersController {
     description: 'Validation failed (e.g., file too large, invalid phone format)',
   })
   @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Missing or invalid Bearer token',
   })
   @UseInterceptors(FileInterceptor('avatar'))
   @HttpCode(HttpStatus.OK)
   async updateProfile(
     @ExtractUserFromRequest() user: UserContextDto,
     @Body() body: UpdateUserProfileDto,
+    @Res({ passthrough: true }) res: Response,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -356,10 +357,21 @@ export class UsersController {
         body.telephone,
         file,
         normalizedIsSubscribed,
+        body.lang,
       ),
     );
 
     const updatedUser = (await this.usersRepository.findById(user.id))!;
+
+    // Sync lang_synced cookie immediately on manual update
+    res.cookie('lang_synced', updatedUser.lang, {
+      maxAge: 86400000, // 24h
+      signed: true,
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+    });
+
     return UserProfileUpdateViewDto.mapToView(updatedUser);
   }
 }

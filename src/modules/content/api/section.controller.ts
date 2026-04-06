@@ -11,16 +11,18 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiParam, ApiExtraModels } from '@nestjs/swagger';
 import { CreateSectionCommand } from '../application/usecases/sections/create-section.usecase';
 import { UpdateSectionCommand } from '../application/usecases/sections/update-section.usecase';
 import { DeleteSectionCommand } from '../application/usecases/sections/delete-section.usecase';
-import { CreateSectionDto, UpdateSectionDto } from './dto/section.dto';
+import { CreateSectionDto, UpdateSectionDto, SectionDto } from './dto/section.dto';
 import { JwtAuthGuard } from '../../user-accounts/guards/bearer/jwt-auth.guard';
 import { SectionsRepository } from '../infrastructure/sections.repository';
 import { APIErrorResult } from 'src/core/dto/error-result.dto';
+import { LocalizedText } from '../domain/localized-text.vo';
 
 @ApiTags('Admin: Sections')
+@ApiExtraModels(LocalizedText)
 @Controller('sections')
 export class SectionController {
   constructor(
@@ -30,12 +32,16 @@ export class SectionController {
 
   @Get()
   @ApiOperation({ summary: 'Get all active sections' })
+  @ApiResponse({ status: 200, type: [SectionDto] })
   async findAll() {
     return this.repository.findAll();
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get section by ID' })
+  @ApiParam({ name: 'id', type: String, description: 'Section MongoDB ID' })
+  @ApiResponse({ status: 200, type: SectionDto })
+  @ApiResponse({ status: 404, description: 'Section not found' })
   async findById(@Param('id') id: string) {
     return this.repository.getByIdOrNotFoundFail(id);
   }
@@ -56,6 +62,7 @@ export class SectionController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('bearer')
   @ApiOperation({ summary: 'Update an existing section (Admin only)' })
+  @ApiParam({ name: 'id', type: String, description: 'Section MongoDB ID' })
   @ApiResponse({ status: 200, description: 'Success' })
   @ApiResponse({ status: 400, type: APIErrorResult, description: 'Validation errors' })
   @ApiResponse({ status: 404, description: 'Section not found' })
@@ -71,6 +78,7 @@ export class SectionController {
   @ApiBearerAuth('bearer')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Soft delete a section (Admin only)' })
+  @ApiParam({ name: 'id', type: String, description: 'Section MongoDB ID' })
   @ApiResponse({ status: 204, description: 'No content' })
   @ApiResponse({ status: 404, description: 'Section not found' })
   async remove(@Param('id') id: string): Promise<void> {

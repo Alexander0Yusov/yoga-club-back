@@ -6,13 +6,13 @@ import { CarouselImage } from './carousel-image.vo';
 
 @Schema({ timestamps: true })
 export class Advantage extends ContentBaseEntity {
-  @Prop({ type: LocalizedText, required: true })
+  @Prop({ type: LocalizedText, required: true, _id: false })
   public title: LocalizedText;
 
-  @Prop({ type: LocalizedText, required: true })
+  @Prop({ type: LocalizedText, required: true, _id: false })
   public text: LocalizedText;
 
-  @Prop({ type: CarouselImage })
+  @Prop({ type: CarouselImage, _id: false })
   public image?: CarouselImage;
 
   @Prop({ type: Number, default: null })

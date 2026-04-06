@@ -14,19 +14,19 @@ export class ClubEvent extends ContentBaseEntity {
   })
   public slug: string;
 
-  @Prop({ type: LocalizedText, required: true })
+  @Prop({ type: LocalizedText, required: true, _id: false })
   public title: LocalizedText;
 
-  @Prop({ type: LocalizedText, required: true })
+  @Prop({ type: LocalizedText, required: true, _id: false })
   public content: LocalizedText;
 
-  @Prop({ type: CarouselImage })
+  @Prop({ type: CarouselImage, _id: false })
   public cover?: CarouselImage;
 
-  @Prop({ type: [CarouselImage], default: [] })
+  @Prop({ type: [CarouselImage], default: [], _id: false })
   public gallery?: CarouselImage[];
 
-  @Prop({ type: SeoMetadata })
+  @Prop({ type: SeoMetadata, _id: false })
   public seoMetadata: SeoMetadata;
 
   @Prop({ required: true })
