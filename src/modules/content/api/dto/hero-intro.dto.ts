@@ -5,7 +5,12 @@ import { LocalizedText } from '../../domain/localized-text.vo';
 import { CarouselImageDto } from './carousel-image.dto';
 
 export class CreateHeroIntroDto {
-  @ApiProperty({ type: () => LocalizedText })
+  @ApiProperty({
+    type: 'string',
+    description: 'JSON string of LocalizedText object {ru, en, de, uk}',
+    example: '{"ru": "Заголовок", "en": "Title", "de": "Titel", "uk": "Заголовок"}',
+    required: true
+  })
   @Transform(({ value, key }) => {
     console.log(`[2. TRANSFORM RAW ${key}]:`, value);
     try {
@@ -27,7 +32,12 @@ export class CreateHeroIntroDto {
   @ValidateNested()
   public title: LocalizedText;
 
-  @ApiProperty({ type: () => LocalizedText })
+  @ApiProperty({
+    type: 'string',
+    description: 'JSON string of LocalizedText object {ru, en, de, uk}',
+    example: '{"ru": "Подзаголовок 1", "en": "Subtitle 1"}',
+    required: true
+  })
   @Transform(({ value, key }) => {
     console.log(`[2. TRANSFORM RAW ${key}]:`, value);
     try {
@@ -49,7 +59,12 @@ export class CreateHeroIntroDto {
   @ValidateNested()
   public text1: LocalizedText;
 
-  @ApiProperty({ type: () => LocalizedText })
+  @ApiProperty({
+    type: 'string',
+    description: 'JSON string of LocalizedText object {ru, en, de, uk}',
+    example: '{"ru": "Подзаголовок 2", "en": "Subtitle 2"}',
+    required: true
+  })
   @Transform(({ value, key }) => {
     console.log(`[2. TRANSFORM RAW ${key}]:`, value);
     try {
@@ -71,7 +86,7 @@ export class CreateHeroIntroDto {
   @ValidateNested()
   public text2: LocalizedText;
 
-  @ApiProperty({ type: () => CarouselImageDto, required: false })
+  @ApiProperty({ type: 'string', format: 'binary', required: false, description: 'Image file to upload' })
   @IsOptional()
   @Transform(({ value, key }) => {
     console.log(`[2. TRANSFORM RAW ${key}]:`, value);
@@ -100,7 +115,12 @@ export class CreateHeroIntroDto {
 }
 
 export class UpdateHeroIntroDto {
-  @ApiProperty({ type: () => LocalizedText, required: false })
+  @ApiProperty({
+    type: 'string',
+    description: 'JSON string of LocalizedText object {ru, en, de, uk}',
+    example: '{"ru": "Обновленный заголовок", "en": "Updated Title"}',
+    required: false
+  })
   @IsOptional()
   @Transform(({ value, key }) => {
     console.log(`[2. TRANSFORM RAW ${key}]:`, value);
@@ -123,7 +143,12 @@ export class UpdateHeroIntroDto {
   @ValidateNested()
   public title?: LocalizedText;
 
-  @ApiProperty({ type: () => LocalizedText, required: false })
+  @ApiProperty({
+    type: 'string',
+    description: 'JSON string of LocalizedText object {ru, en, de, uk}',
+    example: '{"ru": "Текст 1", "en": "Text 1"}',
+    required: false
+  })
   @IsOptional()
   @Transform(({ value, key }) => {
     console.log(`[2. TRANSFORM RAW ${key}]:`, value);
@@ -146,7 +171,12 @@ export class UpdateHeroIntroDto {
   @ValidateNested()
   public text1?: LocalizedText;
 
-  @ApiProperty({ type: () => LocalizedText, required: false })
+  @ApiProperty({
+    type: 'string',
+    description: 'JSON string of LocalizedText object {ru, en, de, uk}',
+    example: '{"ru": "Текст 2", "en": "Text 2"}',
+    required: false
+  })
   @IsOptional()
   @Transform(({ value, key }) => {
     console.log(`[2. TRANSFORM RAW ${key}]:`, value);
@@ -169,7 +199,7 @@ export class UpdateHeroIntroDto {
   @ValidateNested()
   public text2?: LocalizedText;
 
-  @ApiProperty({ type: () => CarouselImageDto, required: false })
+  @ApiProperty({ type: 'string', format: 'binary', required: false, description: 'New image file to replace existing' })
   @IsOptional()
   @Transform(({ value, key }) => {
     console.log(`[2. TRANSFORM RAW ${key}]:`, value);
@@ -195,4 +225,9 @@ export class UpdateHeroIntroDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   public isActive?: boolean;
+
+  @ApiProperty({ required: false, example: 0 })
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : undefined))
+  public orderIndex?: number;
 }

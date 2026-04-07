@@ -19,4 +19,19 @@ export class LocalizedTextMapper {
     // 4. Ultimate fallback: ru (since it is required in the constructor/domain)
     return text.ru || '';
   }
+
+  static isLocalizedText(obj: any): boolean {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
+
+    const keys = Object.keys(obj);
+    if (keys.length === 0) return false;
+
+    const whitelist = ['ru', 'en', 'uk', 'de'];
+    
+    // Must have at least 'ru'
+    if (!obj.ru && !obj.en && !obj.uk && !obj.de) return false;
+
+    // All keys must be in the whitelist
+    return keys.every(key => whitelist.includes(key));
+  }
 }

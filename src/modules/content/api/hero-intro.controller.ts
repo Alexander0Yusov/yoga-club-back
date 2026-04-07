@@ -23,10 +23,10 @@ import { UpdateHeroIntroCommand } from '../application/usecases/hero-intro/updat
 import { DeleteHeroIntroCommand } from '../application/usecases/hero-intro/delete-hero-intro.usecase';
 import { CreateHeroIntroDto, UpdateHeroIntroDto } from './dto/hero-intro.dto';
 import { HeroIntroViewModel } from './view-models/hero-intro.view-model';
-import { LocalizedTextMapper } from './mappers/localized-text.mapper';
 import { JwtAuthGuard } from '../../user-accounts/guards/bearer/jwt-auth.guard';
 import { HeroIntroRepository } from '../infrastructure/hero-intro.repository';
 import { APIErrorResult } from 'src/core/dto/error-result.dto';
+import { SkipLocalization } from 'src/core/decorators/skip-localization.decorator';
 
 const MULTER_CONFIG = {
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
@@ -41,26 +41,47 @@ export class HeroIntroController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all active hero intros with localization' })
-  @ApiQuery({ name: 'lang', required: false, enum: ['ru', 'en', 'de', 'uk'], description: 'Requested language' })
+  @ApiOperation({ summary: 'Get all active hero intros' })
+  @ApiQuery({ name: 'lang', required: false, enum: ['ru', 'en', 'de', 'uk'], description: 'Requested language (optional, works via cookie/header too)' })
   @ApiHeader({ name: 'Accept-Language', required: false, description: 'Standard HTTP language header' })
-  @ApiOkResponse({ type: [HeroIntroViewModel], description: 'Returns localized active hero sections' })
-  async findAll(@Query('lang') langQuery?: string): Promise<HeroIntroViewModel[]> {
-    const lang = langQuery || 'ru';
+  @ApiOkResponse({ type: [HeroIntroViewModel], description: 'Returns automatically localized hero sections' })
+  async findAll(): Promise<HeroIntroViewModel[]> {
     const items = await this.repository.findAll();
 
     return items.map(item => ({
       id: item._id.toString(),
-      title: LocalizedTextMapper.resolve(item.title, lang),
-      text1: LocalizedTextMapper.resolve(item.text1, lang),
-      text2: LocalizedTextMapper.resolve(item.text2, lang),
+      title: item.title,
+      text1: item.text1,
+      text2: item.text2,
       isActive: item.isActive,
       orderIndex: item.orderIndex,
       image: item.image ? {
         url: item.image.url,
-        alt: LocalizedTextMapper.resolve(item.image.alt, lang),
+        alt: item.image.alt,
       } : undefined,
-    }));
+    })) as any;
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('bearer')
+  @SkipLocalization()
+  @ApiOperation({ summary: 'Get raw HeroIntro data for Admin editing' })
+  @ApiResponse({ status: 200, type: HeroIntroViewModel, description: 'Raw entity with all translations' })
+  async findOne(@Param('id') id: string): Promise<HeroIntroViewModel> {
+    const item = await this.repository.getByIdOrNotFoundFail(id);
+    return {
+      id: item._id.toString(),
+      title: item.title,
+      text1: item.text1,
+      text2: item.text2,
+      isActive: item.isActive,
+      orderIndex: item.orderIndex,
+      image: item.image ? {
+        url: item.image.url,
+        alt: item.image.alt,
+      } : undefined,
+    } as any;
   }
 
   @Post()
@@ -81,7 +102,7 @@ export class HeroIntroController {
     console.log('[1. CONTROLLER RAW BODY]:', request.body);
     return this.commandBus.execute(new CreateHeroIntroCommand(
       payload,
-      files.image?.[0],
+      files?.image?.[0],
     ));
   }
 
@@ -106,7 +127,7 @@ export class HeroIntroController {
     await this.commandBus.execute(new UpdateHeroIntroCommand(
       id,
       payload,
-      files.image?.[0],
+      files?.image?.[0],
     ));
   }
 

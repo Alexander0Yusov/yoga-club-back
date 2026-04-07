@@ -72,13 +72,24 @@ export class UpdateHeroIntroUseCase implements ICommandHandler<UpdateHeroIntroCo
         if (idx > -1) orphanPublicIds.splice(idx, 1);
       }
 
-      // 4. Update and Save
-      Object.assign(heroIntro, {
-        ...(title && { title }),
-        ...(text1 && { text1 }),
-        ...(text2 && { text2 }),
-        image,
-      });
+      // 4. Update and Save (Smart Merge for LocalizedText)
+      const mergeLocalized = (existing: any, update: any) => {
+        if (!update) return;
+        ['ru', 'en', 'de', 'uk'].forEach(lang => {
+          if (update[lang] !== undefined) {
+            existing[lang] = update[lang];
+          }
+        });
+      };
+
+      if (dto.title) mergeLocalized(heroIntro.title, title);
+      if (dto.text1) mergeLocalized(heroIntro.text1, text1);
+      if (dto.text2) mergeLocalized(heroIntro.text2, text2);
+      
+      if (dto.isActive !== undefined) heroIntro.isActive = dto.isActive;
+      if (dto.orderIndex !== undefined) heroIntro.orderIndex = dto.orderIndex;
+      
+      heroIntro.image = image;
 
       await this.repository.save(heroIntro);
 

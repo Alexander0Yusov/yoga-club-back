@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Prop, Schema } from '@nestjs/mongoose';
 import { IsString, IsNotEmpty, IsOptional, MinLength } from 'class-validator';
-import { Expose } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 
 /**
  * BSON Embedded localized texts for MongoDB.
@@ -10,7 +10,6 @@ import { Expose } from 'class-transformer';
 export class LocalizedText {
   @ApiProperty({ example: 'Текст на русском', description: 'Russian translation', minLength: 2 })
   @Expose()
-  @IsOptional()
   @IsString()
   @MinLength(2, { message: 'Текст должен быть не короче 2 символов' })
   @Prop({ type: String })
@@ -18,6 +17,7 @@ export class LocalizedText {
 
   @ApiProperty({ example: 'English text', required: false, description: 'English translation', minLength: 2 })
   @Expose()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsOptional()
   @IsString()
   @MinLength(2, { message: 'Текст должен быть не короче 2 символов' })
@@ -26,6 +26,7 @@ export class LocalizedText {
 
   @ApiProperty({ example: 'Deutscher Text', required: false, description: 'German translation', minLength: 2 })
   @Expose()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsOptional()
   @IsString()
   @MinLength(2, { message: 'Текст должен быть не короче 2 символов' })
@@ -34,6 +35,7 @@ export class LocalizedText {
 
   @ApiProperty({ example: 'Текст українською', required: false, description: 'Ukrainian translation', minLength: 2 })
   @Expose()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsOptional()
   @IsString()
   @MinLength(2, { message: 'Текст должен быть не короче 2 символов' })

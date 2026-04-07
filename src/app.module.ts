@@ -16,6 +16,8 @@ import { CoreConfig } from './core/core.config';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 import { MongooseModule } from '@nestjs/mongoose';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { LocalizationInterceptor } from './core/interceptors/localization.interceptor';
 
 // nest g module modules/user-accounts
 // nest g controller modules/user-accounts --no-spec
@@ -60,7 +62,13 @@ import { MongooseModule } from '@nestjs/mongoose';
     configModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LocalizationInterceptor,
+    },
+  ],
 })
 export class AppModule {
   static async forRoot(coreConfig: CoreConfig): Promise<DynamicModule> {
