@@ -77,13 +77,16 @@ export class GetHomePageQueryHandler implements IQueryHandler<GetHomePageQuery> 
 
       switch (section.for) {
         case SectionContentType.HERO_INTRO:
-          content = heroIntros.length > 0 ? [{
-            id: heroIntros[0]._id.toString(),
-            title: heroIntros[0].title,
-            text1: heroIntros[0].text1,
-            text2: heroIntros[0].text2,
-            image: heroIntros[0].image,
-          }] : [];
+          content = heroIntros.map(item => ({
+            id: item._id.toString(),
+            title: item.title,   // raw LocalizedText → interceptor flattens
+            text1: item.text1,   // raw LocalizedText → interceptor flattens
+            text2: item.text2,   // raw LocalizedText → interceptor flattens
+            image: item.image ? {
+              url: item.image.url,
+              alt: item.image.alt, // raw LocalizedText → interceptor flattens
+            } : undefined,
+          }));
           break;
 
         case SectionContentType.PRACTICE_BENEFITS:

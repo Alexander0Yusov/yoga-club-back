@@ -107,6 +107,36 @@ export class CreateHeroIntroDto {
   @ValidateNested()
   public image?: CarouselImageDto;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'Alt text for image. Plain string (\u2192 ru locale) or JSON {"ru":"...","en":"..."}',
+    example: '{"ru": "Йога в горах", "en": "Yoga in the mountains"}',
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value, key }) => {
+    console.log(`[2. TRANSFORM RAW ${key}]:`, value);
+    try {
+      const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+      if (!parsed || (typeof parsed === 'object' && Object.keys(parsed).length === 0)) return null;
+      // Strip empty strings so translateMissing triggers DeepL for missing langs
+      const cleaned: Record<string, string> = {};
+      for (const [lang, val] of Object.entries(parsed)) {
+        if (typeof val === 'string' && val.trim() !== '') cleaned[lang] = val;
+      }
+      if (Object.keys(cleaned).length === 0) return null;
+      console.log(`[3. TRANSFORM CLEANED ${key}]:`, cleaned);
+      return plainToInstance(LocalizedText, cleaned);
+    } catch {
+      // Plain string → wrap as ru locale
+      return plainToInstance(LocalizedText, { ru: value });
+    }
+  })
+  @Type(() => LocalizedText)
+  @IsObject()
+  @ValidateNested()
+  public imageAlt?: LocalizedText;
+
   @ApiProperty({ required: false, default: true })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
@@ -219,6 +249,36 @@ export class UpdateHeroIntroDto {
   @IsObject()
   @ValidateNested()
   public image?: CarouselImageDto;
+
+  @ApiProperty({
+    type: 'string',
+    description: 'Alt text for image. Plain string (→ ru locale) or JSON {"ru":"...","en":"..."}',
+    example: '{"ru": "Йога в горах", "en": "Yoga in the mountains"}',
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value, key }) => {
+    console.log(`[2. TRANSFORM RAW ${key}]:`, value);
+    try {
+      const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+      if (!parsed || (typeof parsed === 'object' && Object.keys(parsed).length === 0)) return null;
+      // Strip empty strings so translateMissing triggers DeepL for missing langs
+      const cleaned: Record<string, string> = {};
+      for (const [lang, val] of Object.entries(parsed)) {
+        if (typeof val === 'string' && val.trim() !== '') cleaned[lang] = val;
+      }
+      if (Object.keys(cleaned).length === 0) return null;
+      console.log(`[3. TRANSFORM CLEANED ${key}]:`, cleaned);
+      return plainToInstance(LocalizedText, cleaned);
+    } catch {
+      // Plain string → wrap as ru locale
+      return plainToInstance(LocalizedText, { ru: value });
+    }
+  })
+  @Type(() => LocalizedText)
+  @IsObject()
+  @ValidateNested()
+  public imageAlt?: LocalizedText;
 
   @ApiProperty({ required: false })
   @IsOptional()

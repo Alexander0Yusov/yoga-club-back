@@ -39,10 +39,11 @@ export class CreateHeroIntroUseCase implements ICommandHandler<CreateHeroIntroCo
         }
       };
 
-      const [title, text1, text2] = await Promise.all([
+      const [title, text1, text2, imageAlt] = await Promise.all([
         translate(dto.title),
         translate(dto.text1),
         translate(dto.text2),
+        dto.imageAlt ? translate(dto.imageAlt) : Promise.resolve(undefined),
       ]);
 
       // 2. Image Handling
@@ -50,10 +51,10 @@ export class CreateHeroIntroUseCase implements ICommandHandler<CreateHeroIntroCo
       if (file) {
         const res = await this.cloudinaryService.uploadImageWithDetails(file, 'hero-intro');
         uploadedPublicIds.push(res.publicId);
-        // Fallback alt to title
-        image = new CarouselImage(res.url, title, res.publicId);
+        // Use provided imageAlt, fall back to title
+        image = new CarouselImage(res.url, imageAlt ?? title, res.publicId);
       } else if (dto.image) {
-        const alt = dto.image.alt ? await translate(dto.image.alt) : title;
+        const alt = imageAlt ?? (dto.image.alt ? await translate(dto.image.alt) : title);
         image = new CarouselImage(dto.image.url, alt, dto.image.publicId);
       }
 

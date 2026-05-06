@@ -47,10 +47,11 @@ export class UpdateHeroIntroUseCase implements ICommandHandler<UpdateHeroIntroCo
         }
       };
 
-      const [title, text1, text2] = await Promise.all([
+      const [title, text1, text2, imageAlt] = await Promise.all([
         dto.title ? translate(dto.title) : undefined,
         dto.text1 ? translate(dto.text1) : undefined,
         dto.text2 ? translate(dto.text2) : undefined,
+        dto.imageAlt ? translate(dto.imageAlt) : Promise.resolve(undefined),
       ]);
 
       // 3. Image Update
@@ -58,12 +59,12 @@ export class UpdateHeroIntroUseCase implements ICommandHandler<UpdateHeroIntroCo
       if (file) {
         const res = await this.cloudinaryService.uploadImageWithDetails(file, 'hero-intro');
         newUploads.push(res.publicId);
-        // Fallback alt to title (prefer updated title, then existing title)
-        const alt = title || heroIntro.title;
+        // Use provided imageAlt, fall back to updated title or existing title
+        const alt = imageAlt ?? title ?? heroIntro.title;
         image = new CarouselImage(res.url, alt, res.publicId);
       } else if (dto.image) {
         // If only JSON data updated (e.g. alt changed)
-        const alt = dto.image.alt ? await translate(dto.image.alt) : (title || heroIntro.title);
+        const alt = imageAlt ?? (dto.image.alt ? await translate(dto.image.alt) : (title || heroIntro.title));
         image = new CarouselImage(dto.image.url, alt, dto.image.publicId);
         
         // If the URL hasn't changed, we don't want to delete the old image

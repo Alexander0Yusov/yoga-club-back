@@ -10,6 +10,7 @@ import { map } from 'rxjs/operators';
 import type { Request } from 'express';
 import { LocalizedTextMapper } from '../../modules/content/api/mappers/localized-text.mapper';
 import { UserContextDto } from '../../modules/user-accounts/guards/dto/user-context.dto';
+import { SKIP_LOCALIZATION_KEY } from '../decorators/skip-localization.decorator';
 
 @Injectable()
 export class LocalizationInterceptor implements NestInterceptor {
@@ -21,16 +22,14 @@ export class LocalizationInterceptor implements NestInterceptor {
     const http = context.switchToHttp();
     const req = http.getRequest<Request>();
 
-    // 1. BYPASS LOGIC (CRITICAL for Admin Panel / CMS)
-    // - Check for specific header
-    // - Check for specific metadata (decorator)
-    const isRawRequested = req.headers['x-raw-langs'] === 'true';
+    // 1. BYPASS LOGIC: Relies ONLY on @SkipLocalization() decorator.
+    // This is the canonical way to bypass localization for Admin/CMS routes.
     const skipLocalization = this.reflector.getAllAndOverride<boolean>(
-      'skipLocalization',
+      SKIP_LOCALIZATION_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    if (isRawRequested || skipLocalization) {
+    if (skipLocalization) {
       return next.handle();
     }
 

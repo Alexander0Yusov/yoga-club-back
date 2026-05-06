@@ -24,15 +24,16 @@ export function appSetup(app: INestApplication, coreConfig: CoreConfig) {
   );
   app.use(cookieParser(coreConfig.cookieSecret));
   app.enableCors({
-  // Указываем конкретный адрес фронтенда. "*" нельзя использовать вместе с credentials: true
-  origin: "http://localhost:3000", 
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: [
-    "Content-Type", 
-    "Authorization", 
-    "Accept-Language", 
-    "x-client-lang"
-  ],
-});
+    // Указываем конкретный адрес фронтенда. "*" нельзя использовать вместе с credentials: true
+    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept-Language',
+      'Accept',
+      'Cookie',
+    ],
+  });
 }
